@@ -1,0 +1,353 @@
+/* ============ BASE ============ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
+    Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  background: #1a1a2e;
+  color: #e0e0e0;
+  overflow: hidden;
+  height: 100vh;
+}
+
+/* ============ APP LAYOUT ============ */
+
+#app {
+  display: flex;
+  height: 100vh;
+}
+
+/* ============ LEFT PANEL (Terminal) ============ */
+
+#panel-left {
+  width: 50%;
+  display: flex;
+  flex-direction: column;
+  border-right: 2px solid #16213e;
+}
+
+#terminal-header {
+  padding: 8px 16px;
+  background: #16213e;
+  font-size: 13px;
+  font-weight: 600;
+  color: #a0a0b0;
+}
+
+#terminal-container {
+  flex: 1;
+  padding: 4px;
+}
+
+/* ============ RIGHT PANEL (UI) ============ */
+
+#panel-right {
+  width: 50%;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+#ui-container {
+  padding: 20px;
+}
+
+/* ============ SETUP WIZARD ============ */
+
+.setup-wizard {
+  max-width: 500px;
+  margin: 40px auto;
+}
+
+.setup-wizard h2 {
+  color: #e94560;
+}
+
+/* ============ FORM ============ */
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 6px;
+  color: #a0a0b0;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 10px 12px;
+  background: #16213e;
+  border: 1px solid #0f3460;
+  border-radius: 6px;
+  color: #e0e0e0;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  border-color: #e94560;
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* ============ BUTTONS ============ */
+
+.btn {
+  display: inline-block;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s, background 0.2s;
+  text-align: center;
+}
+
+.btn:hover {
+  opacity: 0.85;
+}
+
+.btn-primary {
+  background: #e94560;
+  color: #fff;
+}
+
+.btn-secondary {
+  background: #16213e;
+  color: #e0e0e0;
+  border: 1px solid #0f3460;
+}
+
+.btn-secondary:hover {
+  background: #0f3460;
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ============ DROP ZONE ============ */
+
+.drop-zone {
+  border: 2px dashed #0f3460;
+  border-radius: 12px;
+  padding: 30px;
+  text-align: center;
+  color: #a0a0b0;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.drop-zone:hover {
+  border-color: #e94560;
+}
+
+.drop-zone.dragover {
+  border-color: #e94560;
+  background: rgba(233, 69, 96, 0.05);
+}
+
+.drop-zone-photos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.drop-zone-photo {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.drop-zone-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.drop-zone-photo-remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 20px;
+  height: 20px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(231, 76, 60, 0.9);
+  color: #fff;
+  font-size: 12px;
+  line-height: 20px;
+  text-align: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.drop-zone-photo-remove:hover {
+  background: #e74c3c;
+}
+
+/* ============ LISTING CARD ============ */
+
+.listing-card {
+  background: #16213e;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #0f3460;
+  margin-bottom: 16px;
+}
+
+/* ============ BATCH SLOTS ============ */
+
+.batch-slots {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.batch-slot {
+  background: #16213e;
+  border-radius: 8px;
+  padding: 16px;
+  border: 1px solid #0f3460;
+}
+
+.batch-slot-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+/* ============ STATUS BADGES ============ */
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-pending {
+  background: rgba(160, 160, 176, 0.15);
+  color: #a0a0b0;
+}
+
+.status-generating {
+  background: rgba(233, 69, 96, 0.15);
+  color: #e94560;
+}
+
+.status-ready {
+  background: rgba(46, 204, 113, 0.15);
+  color: #2ecc71;
+}
+
+.status-published {
+  background: rgba(52, 152, 219, 0.15);
+  color: #3498db;
+}
+
+/* ============ TABS ============ */
+
+.tabs {
+  display: flex;
+  border-bottom: 2px solid #0f3460;
+  margin-bottom: 20px;
+}
+
+.tab {
+  padding: 10px 20px;
+  cursor: pointer;
+  color: #a0a0b0;
+  font-weight: 500;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.tab:hover {
+  color: #e0e0e0;
+}
+
+.tab.active {
+  color: #e94560;
+  border-bottom-color: #e94560;
+}
+
+/* ============ CUSTOM SCROLLBAR ============ */
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a1a2e;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #0f3460;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #16213e;
+}
+
+/* ============ NOTIFICATION ============ */
+
+.notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+  z-index: 9999;
+  animation: slideIn 0.3s ease-out;
+}
+
+.notification-success {
+  background: #2ecc71;
+}
+
+.notification-error {
+  background: #e74c3c;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
