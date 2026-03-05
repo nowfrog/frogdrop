@@ -4,6 +4,8 @@ const pty = require('node-pty');
 const Store = require('electron-store');
 const fs = require('fs');
 
+const { startOAuthFlow, getValidToken } = require('./ebay-auth');
+
 const store = new Store();
 let mainWindow;
 let ptyProcess;
@@ -69,6 +71,17 @@ ipcMain.handle('get-photo-base64', async (_, filePath) => {
   const ext = path.extname(filePath).toLowerCase().replace('.', '');
   const mime = ext === 'jpg' ? 'image/jpeg' : `image/${ext}`;
   return `data:${mime};base64,${buffer.toString('base64')}`;
+});
+
+ipcMain.handle('ebay-auth', async () => {
+  const settings = store.get('settings');
+  if (!settings) throw new Error('Settings not configured');
+  try {
+    const tokens = await startOAuthFlow(settings);
+    return { success: true, tokens };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
 });
 
 // App lifecycle
