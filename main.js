@@ -5,6 +5,7 @@ const Store = require('electron-store');
 const fs = require('fs');
 
 const { startOAuthFlow, getValidToken } = require('./ebay-auth');
+const { createListing, uploadPhoto } = require('./ebay-api');
 
 const store = new Store();
 let mainWindow;
@@ -79,6 +80,26 @@ ipcMain.handle('ebay-auth', async () => {
   try {
     const tokens = await startOAuthFlow(settings);
     return { success: true, tokens };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+});
+
+ipcMain.handle('ebay-publish', async (_, listing) => {
+  const settings = store.get('settings');
+  const token = await getValidToken(settings);
+
+  try {
+    // Upload photos first
+    const photoUrls = [];
+    for (const photo of listing.photos) {
+      const url = await uploadPhoto(photo.path, token);
+      photoUrls.push(url);
+    }
+
+    // Create listing
+    const result = await createListing(listing, photoUrls, settings);
+    return result;
   } catch (e) {
     return { success: false, error: e.message };
   }

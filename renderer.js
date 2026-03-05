@@ -519,8 +519,11 @@ function updateUI() {
 
 // ============ STUBS (implemented in later tasks) ============
 
-function publishAllListings() {
-  showNotification('Publish all - coming soon', 'error');
+async function publishAllListings() {
+  const readyListings = state.listings.filter(l => l.status === 'ready');
+  for (const listing of readyListings) {
+    await publishListing(listing);
+  }
 }
 
 // ============ LISTING FORM ============
@@ -676,7 +679,26 @@ function escapeHtml(str) {
 }
 
 async function publishListing(listing) {
-  showNotification('Publish to eBay - coming in Task 8', 'error');
+  const statusEl = document.getElementById(`publish-status-${listing.id}`);
+  if (statusEl) statusEl.textContent = 'Uploading photos and creating listing...';
+
+  try {
+    const result = await window.api.ebayPublish({
+      photos: listing.photos,
+      data: listing.data
+    });
+
+    if (result.success) {
+      listing.status = 'published';
+      showNotification(`Published! Item ID: ${result.itemId}`, 'success');
+    } else {
+      showNotification(`Publish failed: ${result.error}`, 'error');
+    }
+  } catch (e) {
+    showNotification(`Error: ${e.message}`, 'error');
+  }
+
+  updateUI();
 }
 
 // ============ HELPERS ============
