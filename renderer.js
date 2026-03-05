@@ -131,8 +131,255 @@ function renderSetupWizard() {
   });
 }
 
+// ============ MAIN VIEW ============
+
 function renderMainView() {
-  document.getElementById('ui-container').innerHTML = '<p>Main view coming soon.</p>';
+  state.currentView = 'main';
+  const container = document.getElementById('ui-container');
+  container.innerHTML = `
+    <div class="tabs">
+      <div class="tab ${state.mode === 'single' ? 'active' : ''}" data-mode="single">Single Listing</div>
+      <div class="tab ${state.mode === 'batch' ? 'active' : ''}" data-mode="batch">Batch Mode</div>
+      <div class="tab" data-mode="settings" style="margin-left: auto;">Settings</div>
+    </div>
+    <div id="mode-content"></div>
+  `;
+
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const mode = tab.dataset.mode;
+      if (mode === 'settings') {
+        renderSetupWizard();
+        return;
+      }
+      state.mode = mode;
+      renderMainView();
+    });
+  });
+
+  if (state.mode === 'single') {
+    renderSingleMode();
+  } else {
+    renderBatchMode();
+  }
+}
+
+// ============ SINGLE MODE ============
+
+function renderSingleMode() {
+  const content = document.getElementById('mode-content');
+
+  if (!state.listings.length || state.listings[0].mode !== 'single') {
+    state.listings = [{ id: Date.now(), photos: [], data: null, status: 'pending', mode: 'single' }];
+  }
+
+  const listing = state.listings[0];
+
+  content.innerHTML = `
+    <div class="listing-card">
+      <h3>Item Photos</h3>
+      <div class="drop-zone" id="single-drop-zone">
+        <p>Drag & drop photos here</p>
+        <p style="font-size: 12px; margin-top: 8px;">or click to browse</p>
+        <div class="drop-zone-photos" id="single-photos"></div>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+      <button class="btn btn-primary" id="generate-btn" ${listing.photos.length === 0 ? 'disabled' : ''}>
+        Generate Listing with Claude
+      </button>
+      <button class="btn btn-secondary" id="clear-btn">Clear Photos</button>
+    </div>
+
+    <div id="listing-form-container"></div>
+  `;
+
+  setupDropZone('single-drop-zone', 'single-photos', listing);
+
+  document.getElementById('generate-btn').addEventListener('click', () => generateListing(listing));
+  document.getElementById('clear-btn').addEventListener('click', () => {
+    listing.photos = [];
+    listing.data = null;
+    listing.status = 'pending';
+    renderSingleMode();
+  });
+
+  if (listing.data) {
+    renderListingForm(listing, 'listing-form-container');
+  }
+}
+
+// ============ BATCH MODE ============
+
+function renderBatchMode() {
+  const content = document.getElementById('mode-content');
+
+  if (state.listings.length === 1 && state.listings[0].mode === 'single') {
+    state.listings = [];
+  }
+
+  content.innerHTML = `
+    <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+      <button class="btn btn-primary" id="add-slot-btn">+ Add Item Slot</button>
+      <button class="btn btn-primary" id="generate-all-btn" ${state.listings.filter(l => l.photos.length > 0 && l.status === 'pending').length === 0 ? 'disabled' : ''}>
+        Generate All
+      </button>
+      <button class="btn btn-primary" id="publish-all-btn" ${state.listings.filter(l => l.status === 'ready').length === 0 ? 'disabled' : ''}>
+        Publish All
+      </button>
+    </div>
+    <div class="batch-slots" id="batch-slots"></div>
+  `;
+
+  renderBatchSlots();
+
+  document.getElementById('add-slot-btn').addEventListener('click', () => {
+    state.listings.push({ id: Date.now(), photos: [], data: null, status: 'pending', mode: 'batch' });
+    renderBatchSlots();
+  });
+
+  document.getElementById('generate-all-btn').addEventListener('click', generateAllListings);
+  document.getElementById('publish-all-btn').addEventListener('click', publishAllListings);
+}
+
+function renderBatchSlots() {
+  const container = document.getElementById('batch-slots');
+  if (!container) return;
+  container.innerHTML = '';
+
+  state.listings.forEach((listing, index) => {
+    const statusClass = `status-${listing.status}`;
+    const statusLabel = listing.status.charAt(0).toUpperCase() + listing.status.slice(1);
+
+    const slot = document.createElement('div');
+    slot.className = 'batch-slot';
+    slot.innerHTML = `
+      <div class="batch-slot-header">
+        <h3>Item ${index + 1}${listing.data ? ': ' + listing.data.title.substring(0, 40) + '...' : ''}</h3>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <span class="status-badge ${statusClass}">${statusLabel}</span>
+          <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 12px;" data-remove="${index}">Remove</button>
+        </div>
+      </div>
+      <div class="drop-zone" id="batch-drop-${listing.id}" style="min-height: 100px; padding: 20px;">
+        <p style="font-size: 13px;">Drop photos for this item</p>
+        <div class="drop-zone-photos" id="batch-photos-${listing.id}"></div>
+      </div>
+      ${listing.data ? `<div id="batch-form-${listing.id}" style="margin-top: 12px;"></div>` : ''}
+    `;
+
+    container.appendChild(slot);
+    setupDropZone(`batch-drop-${listing.id}`, `batch-photos-${listing.id}`, listing);
+
+    if (listing.data) {
+      renderListingForm(listing, `batch-form-${listing.id}`);
+    }
+  });
+
+  document.querySelectorAll('[data-remove]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.remove);
+      state.listings.splice(idx, 1);
+      renderBatchSlots();
+    });
+  });
+}
+
+// ============ DROP ZONE ============
+
+function setupDropZone(dropZoneId, photosContainerId, listing) {
+  const dropZone = document.getElementById(dropZoneId);
+  const photosContainer = document.getElementById(photosContainerId);
+
+  if (!dropZone) return;
+
+  renderPhotos(photosContainer, listing);
+
+  dropZone.addEventListener('click', async (e) => {
+    if (e.target.closest('.drop-zone-photo-remove')) return;
+    const result = await window.api.showOpenDialog({
+      properties: ['openFile', 'multiSelections'],
+      filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'webp', 'bmp'] }]
+    });
+    if (!result.canceled && result.filePaths.length) {
+      for (const fp of result.filePaths) {
+        listing.photos.push({ path: fp, name: fp.split(/[/\\]/).pop() });
+      }
+      renderPhotos(photosContainer, listing);
+      updateGenerateButtons();
+    }
+  });
+
+  dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('dragover');
+  });
+
+  dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('dragover');
+  });
+
+  dropZone.addEventListener('drop', async (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+    for (const file of files) {
+      listing.photos.push({ path: file.path, name: file.name });
+    }
+    renderPhotos(photosContainer, listing);
+    updateGenerateButtons();
+  });
+}
+
+async function renderPhotos(container, listing) {
+  if (!container) return;
+  container.innerHTML = '';
+  for (const photo of listing.photos) {
+    const base64 = await window.api.getPhotoBase64(photo.path);
+    const wrapper = document.createElement('div');
+    wrapper.className = 'drop-zone-photo-wrapper';
+    wrapper.innerHTML = `
+      <img src="${base64}" class="drop-zone-photo" title="${photo.name}">
+      <button class="drop-zone-photo-remove">&times;</button>
+    `;
+    wrapper.querySelector('.drop-zone-photo-remove').addEventListener('click', (e) => {
+      e.stopPropagation();
+      listing.photos = listing.photos.filter(p => p.path !== photo.path);
+      wrapper.remove();
+      updateGenerateButtons();
+    });
+    container.appendChild(wrapper);
+  }
+}
+
+function updateGenerateButtons() {
+  const genBtn = document.getElementById('generate-btn');
+  if (genBtn) {
+    genBtn.disabled = state.listings.length === 0 || state.listings[0].photos.length === 0;
+  }
+  const genAllBtn = document.getElementById('generate-all-btn');
+  if (genAllBtn) {
+    genAllBtn.disabled = state.listings.filter(l => l.photos.length > 0 && l.status === 'pending').length === 0;
+  }
+}
+
+// ============ STUBS (implemented in later tasks) ============
+
+function generateListing(listing) {
+  showNotification('Generate listing - coming soon', 'error');
+}
+
+function generateAllListings() {
+  showNotification('Generate all - coming soon', 'error');
+}
+
+function publishAllListings() {
+  showNotification('Publish all - coming soon', 'error');
+}
+
+function renderListingForm(listing, containerId) {
+  // stub - implemented in Task 7
 }
 
 // ============ HELPERS ============
