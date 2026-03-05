@@ -46,6 +46,38 @@ function initTerminal() {
   resizeObserver.observe(document.getElementById('terminal-container'));
 }
 
+// ============ RESIZE HANDLE ============
+
+function initResizeHandle() {
+  const handle = document.getElementById('resize-handle');
+  const left = document.getElementById('panel-left');
+  const right = document.getElementById('panel-right');
+  let isResizing = false;
+
+  handle.addEventListener('mousedown', (e) => {
+    isResizing = true;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!isResizing) return;
+    const containerWidth = document.getElementById('app').offsetWidth;
+    const percent = (e.clientX / containerWidth) * 100;
+    if (percent > 20 && percent < 80) {
+      left.style.width = `${percent}%`;
+      right.style.width = `${100 - percent}%`;
+      if (fitAddon) fitAddon.fit();
+    }
+  });
+
+  document.addEventListener('mouseup', () => {
+    isResizing = false;
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  });
+}
+
 // ============ APP STATE ============
 
 const state = {
@@ -59,6 +91,7 @@ const state = {
 
 async function init() {
   initTerminal();
+  initResizeHandle();
   state.settings = await window.api.getSettings();
 
   if (!state.settings || !state.settings.ebayAppId) {
