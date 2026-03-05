@@ -364,15 +364,160 @@ function updateGenerateButtons() {
   }
 }
 
+// ============ PROMPT BUILDER ============
+
+function buildListingPrompt(photoPaths) {
+  const photoList = photoPaths.map((p, i) => `  ${i + 1}. ${p}`).join('\n');
+
+  return `Analyze the following product photos and create a complete eBay.it listing in Italian.
+
+Photos to analyze:
+${photoList}
+
+You MUST respond with ONLY a valid JSON object (no markdown, no code blocks, no explanation) in this exact format:
+{
+  "title": "eBay listing title in Italian (max 80 chars)",
+  "description": "Detailed HTML description in Italian for eBay listing. Include product details, condition notes, measurements if visible, and any relevant features you can identify from the photos.",
+  "category_suggestion": "Suggested eBay category name in Italian",
+  "category_id": "eBay category ID number if you know it, otherwise empty string",
+  "item_specifics": {
+    "Marca": "Brand if visible",
+    "Modello": "Model if visible",
+    "Colore": "Color",
+    "Materiale": "Material if identifiable"
+  },
+  "condition": "NEW|USED_EXCELLENT|USED_GOOD|USED_ACCEPTABLE|FOR_PARTS",
+  "condition_description": "Brief condition notes in Italian",
+  "suggested_price": "Suggested price in EUR as number",
+  "suggested_shipping": "Standard shipping cost in EUR as number"
+}
+
+IMPORTANT:
+- The title MUST be in Italian and optimized for eBay search (include brand, model, key features)
+- The description MUST be in Italian, detailed, and in HTML format
+- Look carefully at ALL photos to identify the product
+- Be specific about what you see - brand names, model numbers, sizes, colors
+- If you can't identify something, describe what you see
+- Respond with ONLY the JSON, nothing else`;
+}
+
+// ============ GENERATE LISTING ============
+
+async function generateListing(listing) {
+  listing.status = 'generating';
+  updateUI();
+
+  const photoPaths = listing.photos.map(p => p.path);
+  const prompt = buildListingPrompt(photoPaths);
+
+  // Clear terminal buffer for this generation
+  terminalBuffer = '';
+
+  // Send the prompt to Claude Code via terminal
+  // Escape the prompt for shell and pipe to claude
+  const escapedPrompt = prompt.replace(/\\/g, '\\\\').replace(/`/g, '\\`').replace(/\$/g, '\\$').replace(/"/g, '\\"');
+  const command = `echo "${escapedPrompt}" | claude --no-input\r`;
+
+  window.api.sendToTerminal(command);
+
+  // Wait for Claude Code to respond and parse the output
+  await waitForClaudeResponse(listing);
+}
+
+function waitForClaudeResponse(listing) {
+  return new Promise((resolve) => {
+    let checkInterval;
+    let lastBufferLength = 0;
+    let stableCount = 0;
+
+    checkInterval = setInterval(() => {
+      if (terminalBuffer.length === lastBufferLength) {
+        stableCount++;
+      } else {
+        stableCount = 0;
+        lastBufferLength = terminalBuffer.length;
+      }
+
+      // After 3 seconds of no new output, try to parse
+      if (stableCount >= 3) {
+        clearInterval(checkInterval);
+        const parsed = parseClaudeOutput(terminalBuffer);
+        if (parsed) {
+          listing.data = parsed;
+          listing.status = 'ready';
+        } else {
+          listing.status = 'pending';
+          showNotification('Could not parse Claude output. Try again.', 'error');
+        }
+        terminalBuffer = '';
+        updateUI();
+        resolve();
+      }
+    }, 1000);
+
+    // Timeout after 2 minutes
+    setTimeout(() => {
+      clearInterval(checkInterval);
+      if (listing.status === 'generating') {
+        listing.status = 'pending';
+        showNotification('Generation timed out. Try again.', 'error');
+        updateUI();
+        resolve();
+      }
+    }, 120000);
+  });
+}
+
+function parseClaudeOutput(output) {
+  try {
+    // Clean ANSI escape codes
+    let cleaned = output.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '');
+    // Try to find JSON block
+    const jsonMatch = cleaned.match(/\{[\s\S]*"title"[\s\S]*"description"[\s\S]*\}/);
+    if (jsonMatch) {
+      const data = JSON.parse(jsonMatch[0]);
+      if (data.title && data.description) {
+        return data;
+      }
+    }
+  } catch (e) {
+    // Try more aggressive cleaning
+    try {
+      let cleaned = output.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '');
+      const start = cleaned.indexOf('{');
+      const end = cleaned.lastIndexOf('}');
+      if (start !== -1 && end !== -1) {
+        const json = cleaned.substring(start, end + 1);
+        const data = JSON.parse(json);
+        if (data.title && data.description) {
+          return data;
+        }
+      }
+    } catch (e2) {
+      console.error('Failed to parse Claude output:', e2);
+    }
+  }
+  return null;
+}
+
+async function generateAllListings() {
+  const pendingListings = state.listings.filter(l => l.photos.length > 0 && l.status === 'pending');
+  for (const listing of pendingListings) {
+    await generateListing(listing);
+  }
+}
+
+// ============ UI HELPER ============
+
+function updateUI() {
+  if (state.mode === 'single') {
+    renderSingleMode();
+  } else {
+    renderBatchMode();
+  }
+}
+
 // ============ STUBS (implemented in later tasks) ============
-
-function generateListing(listing) {
-  showNotification('Generate listing - coming soon', 'error');
-}
-
-function generateAllListings() {
-  showNotification('Generate all - coming soon', 'error');
-}
 
 function publishAllListings() {
   showNotification('Publish all - coming soon', 'error');
