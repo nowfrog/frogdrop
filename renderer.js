@@ -523,8 +523,160 @@ function publishAllListings() {
   showNotification('Publish all - coming soon', 'error');
 }
 
+// ============ LISTING FORM ============
+
 function renderListingForm(listing, containerId) {
-  // stub - implemented in Task 7
+  const container = document.getElementById(containerId);
+  if (!container || !listing.data) return;
+
+  const d = listing.data;
+
+  container.innerHTML = `
+    <div class="listing-card">
+      <h3>Listing Details</h3>
+
+      <div class="form-group">
+        <label>Title (max 80 chars)</label>
+        <input type="text" maxlength="80" value="${escapeHtml(d.title)}" data-field="title">
+        <span style="font-size: 11px; color: #a0a0b0;" id="title-count-${listing.id}">${(d.title || '').length}/80</span>
+      </div>
+
+      <div class="form-group">
+        <label>Description (HTML)</label>
+        <textarea rows="8" data-field="description">${escapeHtml(d.description)}</textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Category</label>
+        <input type="text" value="${escapeHtml(d.category_suggestion || '')}" data-field="category_suggestion">
+      </div>
+
+      <div class="form-group">
+        <label>Category ID</label>
+        <input type="text" value="${escapeHtml(d.category_id || '')}" data-field="category_id">
+      </div>
+
+      <div class="form-group">
+        <label>Condition</label>
+        <select data-field="condition">
+          <option value="NEW" ${d.condition === 'NEW' ? 'selected' : ''}>Nuovo</option>
+          <option value="USED_EXCELLENT" ${d.condition === 'USED_EXCELLENT' ? 'selected' : ''}>Usato - Come nuovo</option>
+          <option value="USED_GOOD" ${d.condition === 'USED_GOOD' ? 'selected' : ''}>Usato - Buono</option>
+          <option value="USED_ACCEPTABLE" ${d.condition === 'USED_ACCEPTABLE' ? 'selected' : ''}>Usato - Accettabile</option>
+          <option value="FOR_PARTS" ${d.condition === 'FOR_PARTS' ? 'selected' : ''}>Per ricambi</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Condition Description</label>
+        <input type="text" value="${escapeHtml(d.condition_description || '')}" data-field="condition_description">
+      </div>
+
+      <div style="display: flex; gap: 12px;">
+        <div class="form-group" style="flex: 1;">
+          <label>Price (EUR)</label>
+          <input type="number" step="0.01" value="${d.suggested_price || ''}" data-field="suggested_price">
+        </div>
+        <div class="form-group" style="flex: 1;">
+          <label>Shipping (EUR)</label>
+          <input type="number" step="0.01" value="${d.suggested_shipping || ''}" data-field="suggested_shipping">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Quantity</label>
+        <input type="number" min="1" value="${d.quantity || 1}" data-field="quantity">
+      </div>
+
+      <h3 style="margin-top: 16px;">Item Specifics</h3>
+      <div id="item-specifics-${listing.id}"></div>
+      <button class="btn btn-secondary" style="margin-top: 8px; font-size: 12px;" id="add-specific-${listing.id}">+ Add Specific</button>
+
+      <div style="margin-top: 20px; display: flex; gap: 12px;">
+        <button class="btn btn-primary" id="publish-btn-${listing.id}">Publish to eBay</button>
+        <button class="btn btn-secondary" id="regenerate-btn-${listing.id}">Regenerate</button>
+      </div>
+
+      <p id="publish-status-${listing.id}" style="margin-top: 8px; font-size: 13px; color: #a0a0b0;"></p>
+    </div>
+  `;
+
+  // Item specifics
+  const specificsContainer = document.getElementById(`item-specifics-${listing.id}`);
+  const specifics = d.item_specifics || {};
+  Object.entries(specifics).forEach(([key, value]) => {
+    addSpecificRow(specificsContainer, key, value, listing);
+  });
+
+  document.getElementById(`add-specific-${listing.id}`).addEventListener('click', () => {
+    addSpecificRow(specificsContainer, '', '', listing);
+  });
+
+  // Title char counter
+  const titleInput = container.querySelector('[data-field="title"]');
+  if (titleInput) {
+    titleInput.addEventListener('input', () => {
+      const countEl = document.getElementById(`title-count-${listing.id}`);
+      if (countEl) countEl.textContent = `${titleInput.value.length}/80`;
+    });
+  }
+
+  // Save on change
+  container.querySelectorAll('input, textarea, select').forEach(el => {
+    el.addEventListener('change', () => {
+      const field = el.dataset.field;
+      if (field) {
+        listing.data[field] = el.value;
+      }
+    });
+  });
+
+  // Publish button
+  document.getElementById(`publish-btn-${listing.id}`).addEventListener('click', () => publishListing(listing));
+
+  // Regenerate button
+  document.getElementById(`regenerate-btn-${listing.id}`).addEventListener('click', () => {
+    listing.data = null;
+    listing.status = 'pending';
+    updateUI();
+    generateListing(listing);
+  });
+}
+
+function addSpecificRow(container, key, value, listing) {
+  const row = document.createElement('div');
+  row.style.cssText = 'display: flex; gap: 8px; margin-bottom: 8px;';
+  row.innerHTML = `
+    <input type="text" placeholder="Name" value="${escapeHtml(key)}" style="flex: 1; padding: 8px; background: #16213e; border: 1px solid #0f3460; border-radius: 6px; color: #e0e0e0;" class="specific-key">
+    <input type="text" placeholder="Value" value="${escapeHtml(value)}" style="flex: 1; padding: 8px; background: #16213e; border: 1px solid #0f3460; border-radius: 6px; color: #e0e0e0;" class="specific-value">
+    <button class="btn btn-secondary" style="padding: 4px 10px;">&times;</button>
+  `;
+
+  const updateSpecifics = () => {
+    listing.data.item_specifics = {};
+    container.querySelectorAll('div').forEach(r => {
+      const k = r.querySelector('.specific-key');
+      const v = r.querySelector('.specific-value');
+      if (k && k.value) listing.data.item_specifics[k.value] = v ? v.value : '';
+    });
+  };
+
+  row.querySelectorAll('input').forEach(i => i.addEventListener('change', updateSpecifics));
+  row.querySelector('button').addEventListener('click', () => {
+    row.remove();
+    updateSpecifics();
+  });
+
+  container.appendChild(row);
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+async function publishListing(listing) {
+  showNotification('Publish to eBay - coming in Task 8', 'error');
 }
 
 // ============ HELPERS ============
