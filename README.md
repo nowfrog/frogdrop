@@ -23,7 +23,6 @@
   <a href="#download"><strong>Download</strong></a> · <a href="#features"><strong>Features</strong></a> · <a href="#getting-started"><strong>Getting Started</strong></a> · <a href="#support-the-project"><strong>Donate</strong></a>
 </p>
 
----
 
 ## Overview
 
@@ -36,7 +35,6 @@ Drop your photos in, let Claude AI generate professional listings in seconds, th
   <img src="docs/screenshots/overview.png" alt="FROGDROP Overview" width="800" />
 </p>
 
----
 
 ## Download
 
@@ -48,11 +46,10 @@ Drop your photos in, let Claude AI generate professional listings in seconds, th
 
 > **Note:** Windows may show a SmartScreen warning since the app isn't code-signed. Click "More info" then "Run anyway". This is normal for open-source apps.
 
----
 
 ## Features
 
-### 🏪 Multi-Platform Selling
+###  🏪 Multi-Platform Selling
 
 Sell on all the major second-hand platforms from one app:
 
@@ -66,13 +63,15 @@ Sell on all the major second-hand platforms from one app:
   <img src="docs/screenshots/store-selector.png" alt="Store Selector" width="600" />
 </p>
 
-### 🤖 AI-Powered Listing Generation
+###  🤖 AI-Powered Listing Generation
 
 Stop writing titles and descriptions manually. Drop your photos and let **Claude Code** (Anthropic's AI) do the work:
 
 1. **Drop photos** of your item into the app
 2. **Click "Generate"** and Claude analyzes the photos and creates a complete listing
 3. **Review and publish** the result: title, description, price suggestion, condition, category, and item specifics are all generated automatically
+
+The AI can make mistakes, but that's the point: everything is in one screen. The generated listing, the editor, the photos, and the terminal are all right there. You can review, tweak the wording, adjust the price, fix any detail, and refine the style before publishing. No switching tabs, no copy-pasting between apps.
 
 Works in **any language**. You can generate listings in English, Italian, French, German, or any of the 11 supported languages. Each store can have its own listing language.
 
@@ -88,7 +87,7 @@ Works in **any language**. You can generate listings in English, Italian, French
   <img src="docs/screenshots/batch-listing.png" alt="Batch Listing" width="700" />
 </p>
 
-### 🧱 LEGO Part Recognizer
+###  🧱 LEGO Part Recognizer
 
 Built specifically for LEGO resellers:
 
@@ -102,7 +101,7 @@ Built specifically for LEGO resellers:
   <img src="docs/screenshots/lego-recognizer.png" alt="LEGO Recognizer" width="600" />
 </p>
 
-### 📝 Full Listing Editor
+###  📝 Full Listing Editor
 
 Every listing field you need, in one clean form:
 
@@ -120,7 +119,7 @@ Every listing field you need, in one clean form:
   <img src="docs/screenshots/editor.png" alt="Listing Editor" width="700" />
 </p>
 
-### 📸 Smart Photo Management
+###  📸 Smart Photo Management
 
 - **Drag & drop** photos from your file system or from the built-in file explorer
 - **Reorder** photos by dragging them within the listing
@@ -128,7 +127,7 @@ Every listing field you need, in one clean form:
 - **Lazy-loaded thumbnails** keep the app fast even with hundreds of listings
 - **Auto-resize** ensures photos are automatically optimized for upload
 
-### 🔄 Vinted & Wallapop Upload
+###  🔄 Vinted & Wallapop Upload
 
 A split-view workflow designed for speed:
 
@@ -143,7 +142,7 @@ A split-view workflow designed for speed:
   <img src="docs/screenshots/upload-vinted.png" alt="Vinted Upload" width="700" />
 </p>
 
-### 📂 Built-in File Explorer
+###  📂 Built-in File Explorer
 
 Browse your photo folders without leaving the app:
 
@@ -157,7 +156,7 @@ Browse your photo folders without leaving the app:
   <img src="docs/screenshots/file-explorer.png" alt="File Explorer" width="400" />
 </p>
 
-### 🎬 YouTube Player
+###  🎬 YouTube Player
 
 Watch videos while you work:
 
@@ -167,7 +166,7 @@ Watch videos while you work:
 - **In-panel fullscreen** fills only the YouTube panel, not the whole app
 - Persistent session so you stay logged in
 
-### 🎨 Themes & Languages
+###  🎨 Themes & Languages
 
 Make it yours:
 
@@ -177,7 +176,7 @@ Make it yours:
 
 **11 languages supported:** English, Italian, German, Spanish, French, Japanese, Dutch, Polish, Portuguese, and Swedish. Each store can generate listings in a different language.
 
-### 💾 Backup & Restore
+###  💾 Backup & Restore
 
 Never lose your work:
 
@@ -185,7 +184,7 @@ Never lose your work:
 - **Import** a backup to restore everything, including listings, photos, and settings
 - Works across machines: export from one PC, import on another
 
-### 📋 Bulk Operations
+###  📋 Bulk Operations
 
 Manage large inventories efficiently:
 
@@ -200,11 +199,10 @@ Manage large inventories efficiently:
   <img src="docs/screenshots/bulk-operations.png" alt="Bulk Operations" width="700" />
 </p>
 
----
 
 ## Getting Started
 
-### Download and Run (easiest)
+###  Download and Run (easiest)
 
 1. Download **FROGDROP-portable.exe** from [Releases](https://github.com/nowfrog/frogdrop/releases/latest)
 2. Double-click to run (no installation needed)
@@ -220,7 +218,7 @@ Manage large inventories efficiently:
   <img src="docs/screenshots/splash-screen.png" alt="Splash Screen" width="400" />
 </p>
 
-### Run from Source
+###  Run from Source
 
 ```bash
 # Clone the repository
@@ -234,7 +232,7 @@ npm install
 npm start
 ```
 
-### Requirements
+###  Requirements
 
 | Requirement | For .exe | For source |
 |------------|----------|------------|
@@ -249,7 +247,7 @@ npm start
 npm install -g @anthropic-ai/claude-code
 ```
 
-### eBay API Setup
+###  eBay API Setup
 
 To publish listings directly to eBay, you need free API credentials:
 
@@ -262,7 +260,6 @@ To publish listings directly to eBay, you need free API credentials:
 
 > Vinted and Wallapop don't require API keys. They use the built-in browser for uploading.
 
----
 
 ## How It Works
 
@@ -282,7 +279,6 @@ To publish listings directly to eBay, you need free API credentials:
                   └─────────────┘          └──────────────┘       └──────────────┘
 ```
 
----
 
 ## Data Storage
 
@@ -294,7 +290,6 @@ To publish listings directly to eBay, you need free API credentials:
 
 Data includes the listings database, photos, platform sessions (Vinted/Wallapop/YouTube cookies), and app settings.
 
----
 
 ## Tech Stack
 
@@ -306,7 +301,6 @@ Data includes the listings database, photos, platform sessions (Vinted/Wallapop/
 | [node-pty](https://github.com/microsoft/node-pty) | Terminal process management |
 | [electron-store](https://github.com/sindresorhus/electron-store) | Persistent JSON storage |
 
----
 
 ## Contributing
 
@@ -316,7 +310,53 @@ Contributions are welcome! Feel free to:
 - 💡 [Request features](https://github.com/nowfrog/frogdrop/issues)
 - 🔧 Submit pull requests
 
----
+
+## Who Is This For?
+
+FROGDROP is designed for **casual and semi-professional resellers** who want to speed up the process of listing items across multiple platforms. If you're selling clothes, electronics, collectibles, LEGO parts, or anything else on eBay, Vinted, or Wallapop, this tool will save you a lot of time.
+
+**What FROGDROP is great at right now:**
+- Quickly creating listings with AI-generated titles, descriptions, and prices
+- Managing photos and uploading to multiple platforms from one place
+- Keeping track of what you've listed and where
+
+**What FROGDROP does not include yet:**
+- Tax management or invoicing
+- Inventory tracking with stock levels
+- Order management or shipping label generation
+- Sales analytics and revenue reports
+- Multi-user or team support
+
+These features are planned for future versions. See the roadmap below.
+
+
+## Roadmap
+
+FROGDROP is actively developed. Here's what's planned to evolve it into a complete tool for professional resellers:
+
+### v1.x (near term)
+- [ ] Etsy full integration
+- [ ] Improved responsive layout for smaller screens
+- [ ] Auto-updater (check for new versions from within the app)
+- [ ] macOS and Linux builds
+
+### v2.x (mid term)
+- [ ] **Inventory management** with stock tracking across platforms
+- [ ] **Order management** to view and manage sales from all platforms in one place
+- [ ] **Sales dashboard** with revenue, fees, and profit analytics
+- [ ] **Shipping integration** with label generation (GLS, Poste Italiane, DHL, etc.)
+- [ ] **Template system** for reusable listing templates
+- [ ] Cross-listing: publish the same item to multiple platforms simultaneously
+
+### v3.x (long term)
+- [ ] **Tax management** with invoicing and fiscal reports
+- [ ] **Multi-user support** for teams and shops with multiple operators
+- [ ] **Accounting integration** (export to CSV/Excel, connect to accounting software)
+- [ ] **Mobile companion app** to manage listings on the go
+- [ ] Plugin system for custom platform integrations
+
+Have a feature request? [Open an issue](https://github.com/nowfrog/frogdrop/issues) and let us know what you need.
+
 
 ## Support the Project
 
@@ -328,13 +368,10 @@ FROGDROP is free and open-source. If it helps you sell faster and earn more, con
   </a>
 </p>
 
----
 
 ## License
 
 [MIT](LICENSE). Free to use, modify, and distribute.
-
----
 
 <p align="center">
   Made with 🐸 by <a href="https://github.com/nowfrog">nowfrog</a>
