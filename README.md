@@ -194,10 +194,6 @@ Manage large inventories efficiently:
 - **Bulk delete** to clean up published or unwanted listings
 - Switch between **grid or list view** depending on your preference
 
-<!-- SCREENSHOT: listings grid with bulk selection bar visible -->
-<p align="center">
-  <img src="docs/screenshots/bulk-operations.png" alt="Bulk Operations" width="700" />
-</p>
 
 
 ## Getting Started
