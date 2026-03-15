@@ -14,7 +14,7 @@
   </a>
   <img src="https://img.shields.io/badge/platform-Windows-blue?style=flat-square" alt="Platform" />
   <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License" />
-  <a href="https://paypal.me/andreamorana">
+  <a href="https://paypal.me/nowfrog">
     <img src="https://img.shields.io/badge/Donate-PayPal-blue?style=flat-square&logo=paypal" alt="Donate" />
   </a>
 </p>
@@ -323,7 +323,7 @@ Contributions are welcome! Feel free to:
 FROGDROP is free and open-source. If it helps you sell faster and earn more, consider supporting its development:
 
 <p align="center">
-  <a href="https://paypal.me/andreamorana">
+  <a href="https://paypal.me/nowfrog">
     <img src="https://img.shields.io/badge/Donate_via_PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white" alt="Donate with PayPal" />
   </a>
 </p>
