@@ -1,0 +1,9 @@
+node_modules/
+appdata/
+config.json
+photos/
+lego-data/
+vinted-data/
+.prompt.md
+.response.json
+dist/
