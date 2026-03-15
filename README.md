@@ -5,7 +5,7 @@
 <h1 align="center">FROGDROP</h1>
 <p align="center"><strong>Drop your listings everywhere.</strong></p>
 <p align="center">
-  The all-in-one desktop app for resellers. Manage your eBay, Vinted, and Wallapop listings from a single interface — with AI that writes your listings for you.
+  The all-in-one desktop app for resellers. Manage your eBay, Vinted, and Wallapop listings from a single interface -with AI that writes your listings for you.
 </p>
 
 <p align="center">
@@ -27,7 +27,7 @@
 
 ## Overview
 
-FROGDROP is a free, open-source desktop application built for resellers who list products on multiple platforms. Instead of switching between browser tabs, copying and pasting titles and descriptions, and uploading the same photos over and over — you do everything from one place.
+FROGDROP is a free, open-source desktop application built for resellers who list products on multiple platforms. Instead of switching between browser tabs, copying and pasting titles and descriptions, and uploading the same photos over and over -you do everything from one place.
 
 Drop your photos in, let Claude AI generate professional listings in seconds, then publish to eBay with one click or drag info into Vinted and Wallapop's built-in browsers. That's it.
 
@@ -56,10 +56,10 @@ Drop your photos in, let Claude AI generate professional listings in seconds, th
 
 Sell on all the major second-hand platforms from one app:
 
-- **eBay** — Full API integration. Create listings, upload photos, set prices, categories, item specifics, shipping options — then publish directly to eBay without opening a browser. Edit and sync existing listings, track published/draft status.
-- **Vinted** — Built-in browser with your listing data on the left panel. Copy title, description, and price with one click, drag photos directly into Vinted's upload form.
-- **Wallapop** — Same workflow as Vinted. Built-in browser with assisted upload, photo drag & drop.
-- **Etsy** — Work in progress.
+- **eBay** -Full API integration. Create listings, upload photos, set prices, categories, item specifics, shipping options -then publish directly to eBay without opening a browser. Edit and sync existing listings, track published/draft status.
+- **Vinted** -Built-in browser with your listing data on the left panel. Copy title, description, and price with one click, drag photos directly into Vinted's upload form.
+- **Wallapop** -Same workflow as Vinted. Built-in browser with assisted upload, photo drag & drop.
+- **Etsy** -Work in progress.
 
 <!-- SCREENSHOT: store selector page showing all platforms -->
 <p align="center">
@@ -71,10 +71,10 @@ Sell on all the major second-hand platforms from one app:
 Stop writing titles and descriptions manually. Drop your photos and let **Claude Code** (Anthropic's AI) do the work:
 
 1. **Drop photos** of your item into the app
-2. **Click "Generate"** — Claude analyzes the photos and creates a complete listing
-3. **Review and publish** — title, description, price suggestion, condition, category, item specifics — all generated automatically
+2. **Click "Generate"** -Claude analyzes the photos and creates a complete listing
+3. **Review and publish** -title, description, price suggestion, condition, category, item specifics -all generated automatically
 
-Works in **any language** — generate listings in English, Italian, French, German, or any of the 11 supported languages. Each store can have its own listing language.
+Works in **any language** -generate listings in English, Italian, French, German, or any of the 11 supported languages. Each store can have its own listing language.
 
 <!-- SCREENSHOT: the batch listing view with photos on left, generate button, and preview on right -->
 <p align="center">
@@ -125,8 +125,8 @@ Every listing field you need, in one clean form:
 - **Drag & drop** photos from your file system or from the built-in file explorer
 - **Reorder** photos by dragging them within the listing
 - **Set main photo** with one click
-- **Lazy-loaded thumbnails** — even with hundreds of listings, the app stays fast
-- **Auto-resize** — photos are automatically resized for optimal upload
+- **Lazy-loaded thumbnails** -even with hundreds of listings, the app stays fast
+- **Auto-resize** -photos are automatically resized for optimal upload
 
 ### 🔄 Vinted & Wallapop Upload
 
@@ -136,7 +136,7 @@ A split-view workflow designed for speed:
 - **Right panel:** The platform's website in a built-in browser
 - **One-click copy** for title, description, and price
 - **Drag photos** directly from the listing card into the upload form
-- **Mark as published** when done — keeps track of what you've uploaded
+- **Mark as published** when done -keeps track of what you've uploaded
 
 <!-- SCREENSHOT: Vinted upload split view with listings on left and browser on right -->
 <p align="center">
@@ -150,7 +150,7 @@ Browse your photo folders without leaving the app:
 - Navigate directories with breadcrumb path
 - Image thumbnails preview
 - Select multiple photos and drag them into listings
-- Resizable panel — adjust how much space it takes
+- Resizable panel -adjust how much space it takes
 
 <!-- SCREENSHOT: the file explorer panel showing photo thumbnails -->
 <p align="center">
@@ -162,10 +162,10 @@ Browse your photo folders without leaving the app:
 Watch videos while you work:
 
 - Built-in YouTube browser in a resizable panel
-- **Search bar** — search YouTube or paste a URL
-- **Ad blocker** — no ads while you watch
-- **In-panel fullscreen** — fullscreen fills only the YouTube panel, not the whole app
-- Persistent session — stays logged in
+- **Search bar** -search YouTube or paste a URL
+- **Ad blocker** -no ads while you watch
+- **In-panel fullscreen** -fullscreen fills only the YouTube panel, not the whole app
+- Persistent session -stays logged in
 
 ### 🎨 Themes & Languages
 
@@ -182,18 +182,18 @@ Make it yours:
 Never lose your work:
 
 - **Export** all your listings + photos as a single ZIP file
-- **Import** a backup to restore everything — listings, photos, settings
-- Works across platforms — export from one PC, import on another
+- **Import** a backup to restore everything -listings, photos, settings
+- Works across platforms -export from one PC, import on another
 
 ### 📋 Bulk Operations
 
 Manage large inventories efficiently:
 
 - **Bulk select** listings with checkboxes
-- **Bulk edit** — change shipping, price, or other fields across multiple listings at once
-- **Bulk publish** — publish multiple eBay listings in one go
-- **Bulk delete** — clean up published or unwanted listings
-- **Grid or list view** — switch between card view and compact list
+- **Bulk edit** -change shipping, price, or other fields across multiple listings at once
+- **Bulk publish** -publish multiple eBay listings in one go
+- **Bulk delete** -clean up published or unwanted listings
+- **Grid or list view** -switch between card view and compact list
 
 <!-- SCREENSHOT: listings grid with bulk selection bar visible -->
 <p align="center">
@@ -209,8 +209,8 @@ Manage large inventories efficiently:
 1. Download **FROGDROP-portable.exe** from [Releases](https://github.com/nowfrog/frogdrop/releases/latest)
 2. Double-click to run (no installation needed)
 3. The **splash screen** will check your system:
-   - ✅ **Node.js** — detected automatically
-   - ⚠️ **Claude Code** — if not installed, click **"Install Claude Code"** to install it (optional, needed for AI features)
+   - ✅ **Node.js** -detected automatically
+   - ⚠️ **Claude Code** -if not installed, click **"Install Claude Code"** to install it (optional, needed for AI features)
 4. Click **Enter** to open the app
 5. Go to **Settings** (gear icon) and set your **shop name**
 6. Choose a platform and start listing!
@@ -242,7 +242,7 @@ npm start
 | **Node.js 18+** | ❌ Bundled | ✅ [Download](https://nodejs.org) |
 | **Claude Code** | ⚡ Optional | ⚡ Optional |
 
-**Claude Code** is optional but recommended — it powers the AI listing generation. Without it, you can still create and manage listings manually.
+**Claude Code** is optional but recommended -it powers the AI listing generation. Without it, you can still create and manage listings manually.
 
 ```bash
 # Install Claude Code globally
@@ -260,7 +260,7 @@ To publish listings directly to eBay, you need free API credentials:
 5. In FROGDROP, click on **eBay** → enter your credentials in the setup wizard
 6. Click **"Save & Connect"** to authorize the app with your eBay account
 
-> **Note:** Vinted and Wallapop don't require API keys — they use the built-in browser for uploading.
+> **Note:** Vinted and Wallapop don't require API keys -they use the built-in browser for uploading.
 
 ---
 
@@ -332,7 +332,7 @@ FROGDROP is free and open-source. If it helps you sell faster and earn more, con
 
 ## License
 
-[MIT](LICENSE) — free to use, modify, and distribute.
+[MIT](LICENSE) -free to use, modify, and distribute.
 
 ---
 
