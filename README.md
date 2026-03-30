@@ -292,7 +292,7 @@ Data includes the listings database, photos, platform sessions (Vinted/Wallapop/
 | Technology | Purpose |
 |-----------|---------|
 | [Electron](https://www.electronjs.org/) | Desktop application framework |
-| [Claude Code](https://claude.ai/claude-code) | AI-powered listing generation |
+| [Claude Code](https://claude.com/product/claude-code) | AI-powered listing generation |
 | [xterm.js](https://xtermjs.org/) | Integrated terminal emulator |
 | [node-pty](https://github.com/microsoft/node-pty) | Terminal process management |
 | [electron-store](https://github.com/sindresorhus/electron-store) | Persistent JSON storage |
