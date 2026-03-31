@@ -5,7 +5,7 @@
 <h1 align="center">FROGDROP</h1>
 <p align="center"><strong>Drop your listings everywhere.</strong></p>
 <p align="center">
-  The all-in-one desktop app for resellers. Manage your eBay, Vinted, and Wallapop listings from a single interface, with AI that writes your listings for you.
+  The all-in-one desktop app for resellers. Manage your eBay, Vinted, Wallapop, and Etsy listings from a single interface, with AI that writes your listings for you.
 </p>
 
 <p align="center">
@@ -28,7 +28,9 @@
 
 FROGDROP is a free, open-source desktop application built for resellers who list products on multiple platforms. Instead of switching between browser tabs, copying and pasting titles and descriptions, and uploading the same photos over and over, you do everything from one place.
 
-Drop your photos in, let Claude AI generate professional listings in seconds, then publish to eBay with one click or drag info into Vinted and Wallapop's built-in browsers. That's it.
+Drop your photos in, let AI generate professional listings in seconds, then publish to eBay or Etsy with one click, or drag info into Vinted and Wallapop's built-in browsers. That's it.
+
+**Choose your AI engine:** FROGDROP supports both **Claude Code** (Anthropic) and **Gemini CLI** (Google). Pick the one you prefer on first launch, or switch anytime from settings.
 
 <!-- SCREENSHOT: full app overview showing the store selector or a listing being edited -->
 <p align="center">
@@ -54,9 +56,9 @@ Drop your photos in, let Claude AI generate professional listings in seconds, th
 Sell on all the major second-hand platforms from one app:
 
 - **eBay** has full API integration. Create listings, upload photos, set prices, categories, item specifics, and shipping options, then publish directly without opening a browser. You can also edit and sync existing listings, and track published/draft status.
+- **Etsy** has full API integration. Create listings with taxonomy-based categories, structured properties, tags, materials, shipping profiles, and return policies. Publish, edit, and sync directly from the app.
 - **Vinted** uses a built-in browser with your listing data on the left panel. Copy title, description, and price with one click, and drag photos directly into Vinted's upload form.
 - **Wallapop** works the same way as Vinted, with a built-in browser, assisted upload, and photo drag & drop.
-- **Etsy** is currently a work in progress.
 
 <!-- SCREENSHOT: store selector page showing all platforms -->
 <p align="center">
@@ -65,11 +67,13 @@ Sell on all the major second-hand platforms from one app:
 
 ###  🤖 AI-Powered Listing Generation
 
-Stop writing titles and descriptions manually. Drop your photos and let **Claude Code** (Anthropic's AI) do the work:
+Stop writing titles and descriptions manually. Drop your photos and let AI do the work:
 
 1. **Drop photos** of your item into the app
-2. **Click "Generate"** and Claude analyzes the photos and creates a complete listing
+2. **Click "Generate"** and the AI analyzes the photos and creates a complete listing
 3. **Review and publish** the result: title, description, price suggestion, condition, category, and item specifics are all generated automatically
+
+**Choose your AI engine:** On first launch, FROGDROP asks you to pick between **Claude Code** (Anthropic) and **Gemini CLI** (Google). Both are fully supported with engine-specific tool instructions for maximum accuracy. You can switch anytime from General Settings.
 
 The AI can make mistakes, but that's the point: everything is in one screen. The generated listing, the editor, the photos, and the terminal are all right there. You can review, tweak the wording, adjust the price, fix any detail, and refine the style before publishing. No switching tabs, no copy-pasting between apps.
 
@@ -91,7 +95,7 @@ Works in **any language**. You can generate listings in English, Italian, French
 
 Built specifically for LEGO resellers:
 
-- Drop a photo of a LEGO part and Claude identifies the **part number, color, and name**
+- Drop a photo of a LEGO part and the AI identifies the **part number, color, and name**
 - The app automatically fetches **3D renders** from BrickLink/Rebrickable and adds them to your listing photos
 - Generate dozens of LEGO part listings at once with accurate part data using the bulk workflow
 - Filter your listings by LEGO parts and refresh all renders in one click
@@ -204,10 +208,13 @@ Manage large inventories efficiently:
 2. Double-click to run (no installation needed)
 3. The **splash screen** checks your system:
    - ✅ **Node.js** is detected automatically
-   - ⚠️ **Claude Code**: if not installed, click **"Install Claude Code"** to install it (optional, needed for AI features)
-4. Click **Enter** to open the app
-5. Go to **Settings** (gear icon) and set your **shop name**
-6. Choose a platform and start listing!
+   - ⚠️ **Claude Code**: if not installed, click **"Install Claude Code"** to install it
+   - ⚠️ **Gemini CLI**: if not installed, click **"Install Gemini CLI"** to install it
+   - You need at least one AI engine installed for AI features to work
+4. **Choose your AI engine**: if both Claude Code and Gemini CLI are installed, the app asks you to pick one on first launch
+5. Click **Enter** to open the app
+6. Go to **Settings** (gear icon) and set your **shop name**
+7. Choose a platform and start listing!
 
 <!-- SCREENSHOT: splash screen showing dependency checks -->
 <p align="center">
@@ -235,12 +242,16 @@ npm start
 | **Windows 10/11** | ✅ Required | ✅ Required |
 | **Node.js 18+** | ❌ Bundled | ✅ [Download](https://nodejs.org) |
 | **Claude Code** | ⚡ Optional | ⚡ Optional |
+| **Gemini CLI** | ⚡ Optional | ⚡ Optional |
 
-**Claude Code** is optional but recommended. It powers the AI listing generation. Without it, you can still create and manage listings manually.
+You need **at least one AI engine** (Claude Code or Gemini CLI) for AI-powered listing generation. Without either, you can still create and manage listings manually.
 
 ```bash
 # Install Claude Code globally
 npm install -g @anthropic-ai/claude-code
+
+# OR install Gemini CLI globally
+npm install -g @google/gemini-cli
 ```
 
 ###  eBay API Setup
@@ -254,6 +265,15 @@ To publish listings directly to eBay, you need free API credentials:
 5. In FROGDROP, click on **eBay** and enter your credentials in the setup wizard
 6. Click **"Save & Connect"** to authorize the app with your eBay account
 
+###  Etsy API Setup
+
+To publish listings directly to Etsy:
+
+1. Go to [etsy.com/developers](https://www.etsy.com/developers) and create an app
+2. Note your **API Key (Keystring)**
+3. In FROGDROP, click on **Etsy** and enter your API key and Shop ID
+4. Click **"Connect"** to authorize with OAuth2 (PKCE flow, no client secret needed)
+
 > Vinted and Wallapop don't require API keys. They use the built-in browser for uploading.
 
 
@@ -261,18 +281,18 @@ To publish listings directly to eBay, you need free API credentials:
 
 ```
 ┌─────────────┐     ┌──────────────┐     ┌─────────────────┐
-│  Drop Photos │ ──→ │  Claude AI    │ ──→ │  Complete Listing│
-│  into app    │     │  analyzes &   │     │  title, desc,   │
-│              │     │  generates    │     │  price, specs   │
+│  Drop Photos │ ──→ │  AI Engine    │ ──→ │  Complete Listing│
+│  into app    │     │  Claude Code  │     │  title, desc,   │
+│              │     │  or Gemini CLI│     │  price, specs   │
 └─────────────┘     └──────────────┘     └────────┬────────┘
                                                    │
-                         ┌─────────────────────────┼──────────────────────┐
-                         ▼                         ▼                      ▼
-                  ┌─────────────┐          ┌──────────────┐       ┌──────────────┐
-                  │    eBay     │          │    Vinted     │       │   Wallapop   │
-                  │  API publish│          │  drag & drop  │       │  drag & drop │
-                  │  one-click  │          │  in browser   │       │  in browser  │
-                  └─────────────┘          └──────────────┘       └──────────────┘
+                    ┌──────────────────────────────┼──────────────────────────────┐
+                    ▼                              ▼                              ▼
+             ┌─────────────┐          ┌──────────────────┐          ┌──────────────┐
+             │  eBay / Etsy │          │      Vinted      │          │   Wallapop   │
+             │  API publish │          │   drag & drop    │          │  drag & drop │
+             │  one-click   │          │   in browser     │          │  in browser  │
+             └─────────────┘          └──────────────────┘          └──────────────┘
 ```
 
 
@@ -292,7 +312,8 @@ Data includes the listings database, photos, platform sessions (Vinted/Wallapop/
 | Technology | Purpose |
 |-----------|---------|
 | [Electron](https://www.electronjs.org/) | Desktop application framework |
-| [Claude Code](https://claude.com/product/claude-code) | AI-powered listing generation |
+| [Claude Code](https://claude.com/product/claude-code) | AI-powered listing generation (Anthropic) |
+| [Gemini CLI](https://geminicli.com/) | AI-powered listing generation (Google) |
 | [xterm.js](https://xtermjs.org/) | Integrated terminal emulator |
 | [node-pty](https://github.com/microsoft/node-pty) | Terminal process management |
 | [electron-store](https://github.com/sindresorhus/electron-store) | Persistent JSON storage |
@@ -309,12 +330,14 @@ Contributions are welcome! Feel free to:
 
 ## Who Is This For?
 
-FROGDROP is designed for **casual and semi-professional resellers** who want to speed up the process of listing items across multiple platforms. If you're selling clothes, electronics, collectibles, LEGO parts, or anything else on eBay, Vinted, or Wallapop, this tool will save you a lot of time.
+FROGDROP is designed for **casual and semi-professional resellers** who want to speed up the process of listing items across multiple platforms. If you're selling clothes, electronics, collectibles, LEGO parts, or anything else on eBay, Etsy, Vinted, or Wallapop, this tool will save you a lot of time.
 
 **What FROGDROP is great at right now:**
 - Quickly creating listings with AI-generated titles, descriptions, and prices
-- Managing photos and uploading to multiple platforms from one place
+- Publishing directly to eBay and Etsy via API
+- Managing photos and uploading to Vinted and Wallapop from one place
 - Keeping track of what you've listed and where
+- Choosing between Claude Code and Gemini CLI as your AI engine
 
 **What FROGDROP does not include yet:**
 - Tax management or invoicing
@@ -331,7 +354,8 @@ These features are planned for future versions. See the roadmap below.
 FROGDROP is actively developed. Here's what's planned to evolve it into a complete tool for professional resellers:
 
 ### v1.x (near term)
-- [ ] Etsy full integration
+- [x] Etsy full integration
+- [x] Dual AI engine support (Claude Code + Gemini CLI)
 - [ ] Improved responsive layout for smaller screens
 - [ ] Auto-updater (check for new versions from within the app)
 - [ ] macOS and Linux builds

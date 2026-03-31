@@ -7,7 +7,7 @@ const store = new Store({ cwd: __dirname });
 
 const EBAY_AUTH_URL = 'https://auth.ebay.com/oauth2/authorize';
 const EBAY_TOKEN_URL = 'https://api.ebay.com/identity/v1/oauth2/token';
-const REDIRECT_URI_NAME = ''; // Set via settings
+const REDIRECT_URI_NAME = 'Andrea_Morana-AndreaMo-nowfro-hmsqeljd';
 const SCOPES = [
   'https://api.ebay.com/oauth/api_scope',
   'https://api.ebay.com/oauth/api_scope/sell.inventory',

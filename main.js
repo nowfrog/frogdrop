@@ -50,7 +50,14 @@ function createWindow() {
   });
 }
 
-function spawnTerminal() {
+function spawnTerminal(engine) {
+  // Kill existing pty if restarting
+  if (ptyProcess) {
+    try { ptyProcess.kill(); } catch {}
+    ptyProcess = null;
+  }
+
+  const aiEngine = engine || store.get('aiEngine', null) || 'claude';
   const shell = process.platform === 'win32' ? 'powershell.exe' : 'bash';
   ptyProcess = pty.spawn(shell, [], {
     name: 'xterm-color',
@@ -61,22 +68,36 @@ function spawnTerminal() {
   });
 
   let trustHandled = false;
+  let errorDetected = false;
   ptyProcess.onData((data) => {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('terminal-output', data);
     }
-    // Auto-confirm the workspace trust prompt
-    if (!trustHandled && data.includes('Trust')) {
+    // Auto-confirm the workspace trust prompt (Claude Code)
+    if (!trustHandled && aiEngine === 'claude' && data.includes('Trust')) {
       trustHandled = true;
       setTimeout(() => {
         if (ptyProcess) ptyProcess.write('\r');
       }, 500);
     }
+    // Detect AI engine crash (e.g. module not found)
+    if (!errorDetected && (data.includes('ERR_MODULE_NOT_FOUND') || data.includes('Cannot find module'))) {
+      errorDetected = true;
+      const engineName = aiEngine === 'gemini' ? 'Gemini CLI' : 'Claude Code';
+      const installCmd = aiEngine === 'gemini'
+        ? 'npm install -g @google/gemini-cli'
+        : 'npm install -g @anthropic-ai/claude-code';
+      mainWindow.webContents.send('ai-engine-error', {
+        engine: aiEngine,
+        message: `${engineName} failed to start (module not found). Try reinstalling:\n${installCmd}`
+      });
+    }
   });
 
-  // Auto-launch Claude Code after shell is ready
+  // Auto-launch the selected AI engine after shell is ready
+  const launchCmd = aiEngine === 'gemini' ? 'gemini' : 'claude';
   setTimeout(() => {
-    if (ptyProcess) ptyProcess.write('claude\r');
+    if (ptyProcess) ptyProcess.write(launchCmd + '\r');
   }, 1500);
 }
 
@@ -122,6 +143,67 @@ ipcMain.handle('install-claude-code', async () => {
       });
     });
   });
+});
+
+// Gemini CLI check/install
+ipcMain.handle('check-gemini-cli', async () => {
+  const { exec } = require('child_process');
+  // gemini --version can crash due to module issues, so we check existence via 'where'/'which'
+  // and read version from package.json instead
+  return new Promise((resolve) => {
+    const findCmd = process.platform === 'win32' ? 'where gemini' : 'which gemini';
+    exec(findCmd, { timeout: 5000 }, (err, stdout) => {
+      if (err || !stdout.trim()) return resolve({ installed: false });
+      // Try to read version from the installed package.json
+      let version = '';
+      try {
+        const npmGlobalDir = process.platform === 'win32'
+          ? path.join(process.env.APPDATA || '', 'npm', 'node_modules', '@google', 'gemini-cli')
+          : '';
+        const pkgPath = npmGlobalDir
+          ? path.join(npmGlobalDir, 'package.json')
+          : null;
+        if (pkgPath && fs.existsSync(pkgPath)) {
+          version = JSON.parse(fs.readFileSync(pkgPath, 'utf-8')).version || '';
+        }
+      } catch {}
+      resolve({ installed: true, version });
+    });
+  });
+});
+
+ipcMain.handle('install-gemini-cli', async () => {
+  const { execFile, exec } = require('child_process');
+  return new Promise((resolve) => {
+    execFile('npm', ['install', '-g', '@google/gemini-cli'], { timeout: 120000, shell: true }, (err, stdout, stderr) => {
+      if (err) return resolve({ success: false, error: (stderr || err.message).substring(0, 200) });
+      // Verify installation by checking if command exists
+      const findCmd = process.platform === 'win32' ? 'where gemini' : 'which gemini';
+      exec(findCmd, { timeout: 5000 }, (err2, stdout2) => {
+        if (err2 || !stdout2.trim()) return resolve({ success: false, error: 'Installed but could not verify. Restart the app.' });
+        // Read version from package.json
+        let version = '';
+        try {
+          const pkgPath = path.join(process.env.APPDATA || '', 'npm', 'node_modules', '@google', 'gemini-cli', 'package.json');
+          if (fs.existsSync(pkgPath)) version = JSON.parse(fs.readFileSync(pkgPath, 'utf-8')).version || '';
+        } catch {}
+        resolve({ success: true, version });
+      });
+    });
+  });
+});
+
+// AI Engine preference
+ipcMain.handle('get-ai-engine', () => store.get('aiEngine', null));
+ipcMain.handle('save-ai-engine', (_, engine) => {
+  store.set('aiEngine', engine);
+  return true;
+});
+
+// Restart terminal with a different AI engine
+ipcMain.handle('restart-terminal', (_, engine) => {
+  spawnTerminal(engine);
+  return true;
 });
 
 // Settings IPC
@@ -189,7 +271,7 @@ ipcMain.handle('delete-response-file', async () => {
   return true;
 });
 
-// Photo copy IPC — resize to max 1800px so Claude Code doesn't hit the 2000px multi-image limit
+// Photo copy IPC — resize to max 1800px to avoid multi-image size limits
 ipcMain.handle('copy-photo', async (_, { sourcePath, listingId }) => {
   const dir = path.join(appRoot, 'photos', String(listingId));
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -1104,7 +1186,7 @@ ipcMain.on('native-file-drag', (event, filePaths) => {
 ipcMain.handle('backup-listings', async () => {
   const result = await dialog.showSaveDialog(mainWindow, {
     title: 'Backup',
-    defaultPath: `frogdrop-backup-${new Date().toISOString().slice(0, 10)}.zip`,
+    defaultPath: `nowfrog-backup-${new Date().toISOString().slice(0, 10)}.zip`,
     filters: [{ name: 'ZIP', extensions: ['zip'] }]
   });
   if (result.canceled || !result.filePath) return { success: false, canceled: true };

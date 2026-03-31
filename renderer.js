@@ -99,7 +99,13 @@ const api = {
   saveListingLanguage: (storeName, language) => ipcRenderer.invoke('save-listing-language', { storeName, language }),
   // Backup
   backupListings: () => ipcRenderer.invoke('backup-listings'),
-  importBackup: () => ipcRenderer.invoke('import-backup')
+  importBackup: () => ipcRenderer.invoke('import-backup'),
+  // AI Engine
+  getAiEngine: () => ipcRenderer.invoke('get-ai-engine'),
+  saveAiEngine: (engine) => ipcRenderer.invoke('save-ai-engine', engine),
+  checkGeminiCli: () => ipcRenderer.invoke('check-gemini-cli'),
+  installGeminiCli: () => ipcRenderer.invoke('install-gemini-cli'),
+  restartTerminal: (engine) => ipcRenderer.invoke('restart-terminal', engine)
 };
 
 // ============ TERMINAL ============
@@ -138,10 +144,62 @@ function initTerminal() {
     term.write(data);
   });
 
+  // Listen for AI engine errors
+  ipcRenderer.on('ai-engine-error', (_, { engine, message }) => {
+    showNotification(message, 'error', 10000);
+  });
+
   window.addEventListener('resize', () => fitAddon.fit());
 
   const resizeObserver = new ResizeObserver(() => fitAddon.fit());
   resizeObserver.observe(document.getElementById('terminal-container'));
+}
+
+function updateTerminalHeader() {
+  const headerSpan = document.querySelector('#terminal-header > span');
+  if (headerSpan) {
+    const label = state.aiEngine === 'gemini' ? 'Gemini CLI Terminal' : 'Claude Code Terminal';
+    headerSpan.textContent = label;
+  }
+}
+
+function aiTools() {
+  if (state.aiEngine === 'gemini') {
+    return {
+      webSearch: 'google_web_search',
+      webFetch: 'web_fetch',
+      grep: 'grep_search',
+      readFile: 'read_file',
+      writeFile: 'write_file',
+      searchAndFetch: 'Use the google_web_search and web_fetch tools to do this research.',
+      grepInstruction: 'use the grep_search tool to search for keywords',
+      promptInstruction: (promptPath, responsePath) =>
+        `Use the read_file tool to read ${promptPath} and follow its instructions. Write the JSON result to ${responsePath} using the write_file tool.`
+    };
+  }
+  return {
+    webSearch: 'WebSearch',
+    webFetch: 'WebFetch',
+    grep: 'Grep',
+    readFile: 'Read',
+    writeFile: 'Write',
+    searchAndFetch: 'Use the WebSearch and WebFetch tools to do this research.',
+    grepInstruction: 'use the Grep tool to search for keywords',
+    promptInstruction: (promptPath, responsePath) =>
+      `Read the file ${promptPath} and follow its instructions. Write the JSON result to ${responsePath} using the Write tool.`
+  };
+}
+
+async function sendAiPrompt(promptFilePath, responseFilePath) {
+  const tools = aiTools();
+  if (state.aiEngine === 'claude') {
+    // Claude Code: /clear resets context, then send prompt
+    api.sendToTerminal('/clear\r');
+    await new Promise(r => setTimeout(r, 1000));
+  }
+  // Gemini CLI: skip /clear — it steals focus from the follow-up prompt.
+  // Each prompt is self-contained via the file, so no context clearing needed.
+  api.sendToTerminal(tools.promptInstruction(promptFilePath, responseFilePath) + '\r');
 }
 
 // ============ RESIZE HANDLE ============
@@ -701,7 +759,9 @@ const state = {
   ebayListingLanguage: 'it',
   vintedListingLanguage: 'it',
   wallapopListingLanguage: 'it',
-  etsyListingLanguage: 'it'
+  etsyListingLanguage: 'it',
+  // AI Engine
+  aiEngine: 'claude'  // 'claude' | 'gemini'
 };
 
 // ============ THEME ============
@@ -856,7 +916,7 @@ async function init() {
 
   if (splashMsg) splashMsg.textContent = 'Checking dependencies...';
 
-  // Check 1: Node.js in system PATH (needed for Claude Code / npm)
+  // Check 1: Node.js in system PATH (needed for AI engines / npm)
   let systemNodeFound = false;
   try {
     const nodeResult = await ipcRenderer.invoke('check-system-node');
@@ -865,7 +925,7 @@ async function init() {
       addCheck('Node.js', 'ok', nodeResult.version);
     } else {
       addCheck('Node.js', 'warn',
-        'Not found in system PATH — needed to install Claude Code.<br>' +
+        'Not found in system PATH — needed to install AI engines.<br>' +
         'Download: <span style="color: var(--accent);">nodejs.org</span>'
       );
     }
@@ -874,8 +934,13 @@ async function init() {
     systemNodeFound = true;
   }
 
-  // Check 2: Claude Code
+  // Load saved AI engine preference (null = first time)
+  const savedAiEngine = await api.getAiEngine();
+
+  // Check 2: Claude Code & Gemini CLI
   let claudeInstalled = false;
+  let geminiInstalled = false;
+
   async function checkClaude() {
     try {
       const result = await ipcRenderer.invoke('check-claude-code');
@@ -883,7 +948,16 @@ async function init() {
     } catch { return { installed: false }; }
   }
 
-  const claudeResult = await checkClaude();
+  async function checkGemini() {
+    try {
+      const result = await api.checkGeminiCli();
+      return result.installed ? result : { installed: false };
+    } catch { return { installed: false }; }
+  }
+
+  const [claudeResult, geminiResult] = await Promise.all([checkClaude(), checkGemini()]);
+
+  // Show Claude Code status
   if (claudeResult.installed) {
     claudeInstalled = true;
     addCheck('Claude Code', 'ok', claudeResult.version);
@@ -894,19 +968,15 @@ async function init() {
       <span style="color: #f0ad4e; font-size: 16px; line-height: 1;">&#9888;</span>
       <div>
         <span style="color: var(--text-primary);">Claude Code</span>
-        <div style="color: var(--text-secondary); font-size: 11px; margin-top: 2px;">
-          Not installed — AI listing generation won't work without it.
-        </div>
+        <div style="color: var(--text-secondary); font-size: 11px; margin-top: 2px;">Not installed</div>
         <button id="splash-install-claude" class="btn btn-primary" style="margin-top: 6px; padding: 4px 14px; font-size: 12px;" ${systemNodeFound ? '' : 'disabled title="Install Node.js first"'}>
           Install Claude Code
         </button>
-        ${!systemNodeFound ? '<div style="color: var(--notification-error); font-size: 10px; margin-top: 2px;">Requires Node.js installed on your system</div>' : ''}
         <span id="splash-claude-status" style="display: none; color: var(--text-secondary); font-size: 11px; margin-left: 8px;"></span>
       </div>
     `;
     checksDiv.appendChild(row);
 
-    // Install button handler
     document.getElementById('splash-install-claude').addEventListener('click', async function() {
       const btn = this;
       const statusEl = document.getElementById('splash-claude-status');
@@ -914,28 +984,127 @@ async function init() {
       btn.textContent = 'Installing...';
       statusEl.style.display = 'inline';
       statusEl.textContent = 'This may take a minute...';
-
       try {
         const installResult = await ipcRenderer.invoke('install-claude-code');
         if (installResult.success) {
           btn.style.display = 'none';
           statusEl.style.color = 'var(--notification-success)';
-          statusEl.textContent = '✓ Installed! ' + (installResult.version || '');
+          statusEl.textContent = '\u2713 Installed! ' + (installResult.version || '');
           claudeInstalled = true;
-          if (splashMsg) splashMsg.textContent = 'Ready!';
         } else {
           btn.disabled = false;
           btn.textContent = 'Retry';
           statusEl.style.color = 'var(--notification-error)';
-          statusEl.textContent = installResult.error || 'Installation failed. Try manually: npm install -g @anthropic-ai/claude-code';
+          statusEl.textContent = installResult.error || 'Failed. Try: npm install -g @anthropic-ai/claude-code';
         }
       } catch (e) {
         btn.disabled = false;
         btn.textContent = 'Retry';
         statusEl.style.color = 'var(--notification-error)';
-        statusEl.textContent = 'Error. Try manually: npm install -g @anthropic-ai/claude-code';
+        statusEl.textContent = 'Error. Try: npm install -g @anthropic-ai/claude-code';
       }
     });
+  }
+
+  // Show Gemini CLI status
+  if (geminiResult.installed) {
+    geminiInstalled = true;
+    addCheck('Gemini CLI', 'ok', geminiResult.version);
+  } else {
+    const row = document.createElement('div');
+    row.style.cssText = 'display: flex; align-items: flex-start; gap: 8px; margin-bottom: 8px; font-size: 13px;';
+    row.innerHTML = `
+      <span style="color: #f0ad4e; font-size: 16px; line-height: 1;">&#9888;</span>
+      <div>
+        <span style="color: var(--text-primary);">Gemini CLI</span>
+        <div style="color: var(--text-secondary); font-size: 11px; margin-top: 2px;">Not installed</div>
+        <button id="splash-install-gemini" class="btn btn-primary" style="margin-top: 6px; padding: 4px 14px; font-size: 12px;" ${systemNodeFound ? '' : 'disabled title="Install Node.js first"'}>
+          Install Gemini CLI
+        </button>
+        <span id="splash-gemini-status" style="display: none; color: var(--text-secondary); font-size: 11px; margin-left: 8px;"></span>
+      </div>
+    `;
+    checksDiv.appendChild(row);
+
+    document.getElementById('splash-install-gemini').addEventListener('click', async function() {
+      const btn = this;
+      const statusEl = document.getElementById('splash-gemini-status');
+      btn.disabled = true;
+      btn.textContent = 'Installing...';
+      statusEl.style.display = 'inline';
+      statusEl.textContent = 'This may take a minute...';
+      try {
+        const installResult = await api.installGeminiCli();
+        if (installResult.success) {
+          btn.style.display = 'none';
+          statusEl.style.color = 'var(--notification-success)';
+          statusEl.textContent = '\u2713 Installed! ' + (installResult.version || '');
+          geminiInstalled = true;
+        } else {
+          btn.disabled = false;
+          btn.textContent = 'Retry';
+          statusEl.style.color = 'var(--notification-error)';
+          statusEl.textContent = installResult.error || 'Failed. Try: npm install -g @google/gemini-cli';
+        }
+      } catch (e) {
+        btn.disabled = false;
+        btn.textContent = 'Retry';
+        statusEl.style.color = 'var(--notification-error)';
+        statusEl.textContent = 'Error. Try: npm install -g @google/gemini-cli';
+      }
+    });
+  }
+
+  // At least one AI engine should be installed
+  const anyAiInstalled = claudeInstalled || geminiInstalled;
+
+  // First time: ask which AI engine to use
+  if (!savedAiEngine && anyAiInstalled) {
+    // If only one is installed, auto-select it
+    if (claudeInstalled && !geminiInstalled) {
+      state.aiEngine = 'claude';
+      await api.saveAiEngine('claude');
+    } else if (geminiInstalled && !claudeInstalled) {
+      state.aiEngine = 'gemini';
+      await api.saveAiEngine('gemini');
+    } else {
+      // Both installed — ask the user
+      if (splashMsg) splashMsg.textContent = '';
+      const selectorRow = document.createElement('div');
+      selectorRow.style.cssText = 'margin-top: 12px; margin-bottom: 8px; text-align: center;';
+      selectorRow.innerHTML = `
+        <p style="color: var(--text-primary); font-size: 14px; margin-bottom: 12px; font-weight: 600;">
+          ${t('settings_ai_engine_choose') || 'Choose your AI engine'}
+        </p>
+        <div style="display: flex; gap: 12px; justify-content: center;">
+          <button id="splash-pick-claude" class="btn btn-primary" style="padding: 10px 24px; font-size: 14px;">
+            Claude Code
+          </button>
+          <button id="splash-pick-gemini" class="btn btn-primary" style="padding: 10px 24px; font-size: 14px;">
+            Gemini CLI
+          </button>
+        </div>
+      `;
+      checksDiv.appendChild(selectorRow);
+
+      // Wait for user choice
+      await new Promise((resolve) => {
+        document.getElementById('splash-pick-claude').addEventListener('click', async () => {
+          state.aiEngine = 'claude';
+          await api.saveAiEngine('claude');
+          selectorRow.remove();
+          resolve();
+        });
+        document.getElementById('splash-pick-gemini').addEventListener('click', async () => {
+          state.aiEngine = 'gemini';
+          await api.saveAiEngine('gemini');
+          selectorRow.remove();
+          resolve();
+        });
+      });
+    }
+  } else {
+    state.aiEngine = savedAiEngine || 'claude';
   }
 
   if (splashMsg) splashMsg.textContent = 'Loading data...';
@@ -943,6 +1112,7 @@ async function init() {
   // Load all data in background while user sees the checks
   initTerminal();
   initResizeHandle();
+  updateTerminalHeader();
 
   // Load per-store listing languages
   state.ebayListingLanguage = await api.getListingLanguage('ebay') || 'en';
@@ -979,7 +1149,7 @@ async function init() {
     addCheck(`${totalListings} listings loaded`, 'ok');
   }
 
-  if (splashMsg) splashMsg.textContent = claudeInstalled ? 'Ready!' : 'Ready (some features limited)';
+  if (splashMsg) splashMsg.textContent = anyAiInstalled ? 'Ready!' : 'Ready (some features limited)';
 
   // Show Enter button
   enterBtn.style.display = '';
@@ -1036,6 +1206,15 @@ function renderGeneralSettings() {
         </div>
       </div>
 
+      <div class="form-group">
+        <label for="aiEngine">${t('settings_ai_engine') || 'AI Engine'}</label>
+        <p class="text-secondary text-small" style="margin-bottom: 6px;">${t('settings_ai_engine_desc') || 'Choose which AI assistant to use in the terminal'}</p>
+        <select id="aiEngine">
+          <option value="claude" ${state.aiEngine === 'claude' ? 'selected' : ''}>Claude Code</option>
+          <option value="gemini" ${state.aiEngine === 'gemini' ? 'selected' : ''}>Gemini CLI</option>
+        </select>
+      </div>
+
       <div style="display: flex; gap: 8px; margin-top: 16px;">
         <button id="generalBackBtn" class="btn btn-secondary">&larr; ${t('settings_back')}</button>
         <button id="generalSaveBtn" class="btn btn-primary">${t('settings_save')}</button>
@@ -1053,6 +1232,15 @@ function renderGeneralSettings() {
   document.getElementById('appTheme').addEventListener('change', (e) => {
     applyTheme(e.target.value);
     api.saveTheme(e.target.value);
+  });
+
+  document.getElementById('aiEngine').addEventListener('change', async (e) => {
+    const engine = e.target.value;
+    state.aiEngine = engine;
+    await api.saveAiEngine(engine);
+    await api.restartTerminal(engine);
+    updateTerminalHeader();
+    showNotification(t('settings_ai_engine_changed') || `AI engine switched to ${engine === 'gemini' ? 'Gemini CLI' : 'Claude Code'}`);
   });
 
   document.getElementById('browseExplorerPath').addEventListener('click', async () => {
@@ -1276,12 +1464,12 @@ function renderStoreSelector() {
           <h3>Wallapop</h3>
           <p class="text-secondary text-small">${wallapopCount} ${tListings(wallapopCount)}</p>
         </div>
-        <div class="store-card store-card-disabled" data-store="etsy">
+        <div class="store-card" data-store="etsy">
           <div class="store-card-icon store-card-etsy">
             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 8h5.5c.83 0 1.5.67 1.5 1.5S14.33 11 13.5 11H9v3h4.5c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5H8V8z"/></svg>
           </div>
           <h3>Etsy</h3>
-          <span class="coming-soon-badge">Work in Progress</span>
+          <p class="text-secondary text-small">${etsyCount} ${tListings(etsyCount)}</p>
         </div>
       </div>
     </div>
@@ -2241,12 +2429,9 @@ function renderNewListing() {
     await api.writePromptFile(prompt);
     await api.deleteResponseFile();
 
-    // Clear Claude context and send prompt
-    api.sendToTerminal('/clear\r');
-    await new Promise(r => setTimeout(r, 1000));
     const promptFullPath = appPath.replace(/\\/g, '/') + '/.prompt.md';
     const responseFullPath = appPath.replace(/\\/g, '/') + '/.response.json';
-    api.sendToTerminal(`Read the file ${promptFullPath} and follow its instructions. Write the JSON result to ${responseFullPath} using the Write tool.\r`);
+    await sendAiPrompt(promptFullPath, responseFullPath);
 
     for (const a of validArticles) {
       a.draft.status = 'waiting_import';
@@ -2445,7 +2630,7 @@ Before generating each listing, search the web to:
 2. Search for the SPECIFIC item's current market value — NOT the generic product line. For example: search for the exact comic book issue number of that specific edition, the exact model variant of that device, the specific year/pressing of that vinyl record. Different editions, issues, or variants of the same product can have wildly different values.
 3. Gather detailed technical specifications to enrich the description and item_specifics
 4. Check the product's original retail price for reference
-Use the WebSearch and WebFetch tools to do this research.
+${aiTools().searchAndFetch}
 
 You MUST respond with ONLY valid JSON (no markdown, no code blocks, no explanation).
 ${articles.length > 1 ? 'Respond with a JSON ARRAY of objects, one per article, in the same order as the articles above.' : 'Respond with a single JSON object.'}
@@ -2463,7 +2648,7 @@ Each object must have this exact format:
   },
   "condition": "NEW|USED_EXCELLENT|USED_GOOD|USED_ACCEPTABLE|FOR_PARTS",
   "condition_description": "Brief condition notes in Italian",
-  "suggested_price": "Suggested price in EUR as number (must end in .90 or .99)"
+  "suggested_price": "Suggested price in EUR as number (minimum 1.00, must end in .90 or .99, e.g. 1.90, 4.99, 12.90)"
 }
 
 NOTE: Do NOT include shipping info — shipping cost, service and type are applied automatically from the seller's default settings.
@@ -2774,7 +2959,7 @@ Before generating the listing, search the web to:
 2. Search for the SPECIFIC item's current market value — NOT the generic product line. For example: search for the exact comic book issue number of that specific edition, the exact model variant of that device, the specific year/pressing of that vinyl record. Different editions, issues, or variants of the same product can have wildly different values.
 3. Gather detailed technical specifications (dimensions, weight, materials, features) to enrich the description and item_specifics
 4. Check the product's original retail price for reference
-Use the WebSearch and WebFetch tools to do this research. The more accurate the product identification and pricing, the better.
+${aiTools().searchAndFetch} The more accurate the product identification and pricing, the better.
 
 You MUST respond with ONLY a valid JSON object (no markdown, no code blocks, no explanation) in this exact format:
 {
@@ -2790,7 +2975,7 @@ You MUST respond with ONLY a valid JSON object (no markdown, no code blocks, no 
   },
   "condition": "NEW|USED_EXCELLENT|USED_GOOD|USED_ACCEPTABLE|FOR_PARTS",
   "condition_description": "Brief condition notes in Italian",
-  "suggested_price": "Suggested price in EUR as number (must end in .90 or .99)",
+  "suggested_price": "Suggested price in EUR as number (minimum 1.00, must end in .90 or .99, e.g. 1.90, 4.99, 12.90)",
   "suggested_shipping": "5.49"
 }
 
@@ -2816,12 +3001,9 @@ async function generateListing(listing) {
   await api.writePromptFile(prompt);
   await api.deleteResponseFile();
 
-  // Clear Claude's context to avoid mixing with other projects, then send the prompt
-  api.sendToTerminal('/clear\r');
-  await new Promise(r => setTimeout(r, 1000));
   const promptFullPath = appPath.replace(/\\/g, '/') + '/.prompt.md';
   const responseFullPath = appPath.replace(/\\/g, '/') + '/.response.json';
-  api.sendToTerminal(`Read the file ${promptFullPath} and follow its instructions. Write the JSON result to ${responseFullPath} using the Write tool.\r`);
+  await sendAiPrompt(promptFullPath, responseFullPath);
 
   listing.status = 'waiting_import';
   await saveListing(listing);
@@ -3103,7 +3285,7 @@ function renderListingForm(listing, containerId) {
       addSpecificRowWithOptions(specificsContainer, spec.name, currentValue, spec.values, spec.required, listing);
       renderedNames.add(spec.name);
     }
-    // Also render any custom specifics from Claude that aren't in eBay's list
+    // Also render any custom specifics from AI that aren't in eBay's list
     for (const [key, value] of Object.entries(currentSpecifics)) {
       if (!renderedNames.has(key)) {
         addSpecificRow(specificsContainer, key, value, listing);
@@ -3831,12 +4013,12 @@ async function startPublishAll() {
 
 // ============ HELPERS ============
 
-function showNotification(message, type = 'success') {
+function showNotification(message, type = 'success', duration = 3000) {
   const notif = document.createElement('div');
   notif.className = `notification notification-${type}`;
   notif.textContent = message;
   document.body.appendChild(notif);
-  setTimeout(() => notif.remove(), 3000);
+  setTimeout(() => notif.remove(), duration);
 }
 
 // ============ VINTED ============
@@ -4586,11 +4768,9 @@ function renderVintedNewListing() {
     await api.writePromptFile(prompt);
     await api.deleteResponseFile();
 
-    api.sendToTerminal('/clear\r');
-    await new Promise(r => setTimeout(r, 1000));
     const promptFullPath = appPath.replace(/\\/g, '/') + '/.prompt.md';
     const responseFullPath = appPath.replace(/\\/g, '/') + '/.response.json';
-    api.sendToTerminal(`Read the file ${promptFullPath} and follow its instructions. Write the JSON result to ${responseFullPath} using the Write tool.\r`);
+    await sendAiPrompt(promptFullPath, responseFullPath);
 
     showNotification(`${t('generate_prompt_sent')} (${validArticles.length}).`);
   }
@@ -4762,22 +4942,24 @@ For articles marked as [LEGO PIECE], follow this special procedure:
 2. SEARCH THE LEGO DATABASE: The LEGO parts database is at ${appPath.replace(/\\/g, '/')}/lego-data/parts.csv (CSV: part_num, name, part_cat_id, part_material — 61,000+ rows).
    Categories are at ${appPath.replace(/\\/g, '/')}/lego-data/part_categories.csv (CSV: id, name).
    Colors are at ${appPath.replace(/\\/g, '/')}/lego-data/colors.csv (CSV: id, name, rgb, is_trans).
-   DO NOT read the entire parts.csv — it's too large. Instead use the Grep tool to search for keywords.
+   DO NOT read the entire parts.csv — it's too large. Instead ${aiTools().grepInstruction}.
    Example: search for "Brick 2 x 4" or "Slope" or "Plate 1 x" to find matching parts.
    Combine multiple keyword searches to narrow down the exact part.
 
-3. VERIFY WITH RENDER: Once you identify a candidate part number, fetch the 3D render from:
-   https://cdn.rebrickable.com/media/parts/ldraw/{color_id}/{part_num}.png
-   Common color IDs: 0=Black, 1=Blue, 2=Green, 4=Red, 7=Light Gray, 8=Dark Gray, 14=Yellow, 15=White, 19=Tan, 25=Orange, 70=Reddish Brown, 71=Light Bluish Gray, 72=Dark Bluish Gray
-   Use WebFetch to download the render image, then compare it visually with the user's photo to confirm or reject your identification.
-   If the render doesn't match, try other candidate part numbers.
+3. VERIFY WITH RENDER AND SAVE IT: Once you identify a candidate part number:
+   a) Build the render URL: https://cdn.rebrickable.com/media/parts/ldraw/{color_id}/{part_num}.png
+      Common color IDs: 0=Black, 1=Blue, 2=Green, 4=Red, 7=Light Gray, 8=Dark Gray, 14=Yellow, 15=White, 19=Tan, 25=Orange, 70=Reddish Brown, 71=Light Bluish Gray, 72=Dark Bluish Gray
+   b) Use the ${aiTools().webFetch} tool to fetch the render image and compare it visually with the user's photo.
+      If the render doesn't match, try other candidate part numbers until you find the correct one.
+   c) *** MANDATORY — DO NOT SKIP THIS STEP ***
+      Once you have confirmed the correct part, you MUST save the render image to disk.
+      Extract the article_id from the article's photo paths (the folder name under photos/).
+      Use the ${aiTools().webFetch} tool to download the confirmed render PNG, then use the ${aiTools().writeFile} tool to save it to:
+      ${appPath.replace(/\\/g, '/')}/photos/{article_id}/lego-render.png
+      This file is REQUIRED — it will be used as the listing photo. The listing is incomplete without it.
+      If you do not save this file, the listing will have no product image and will fail.
 
-4. DOWNLOAD RENDER FOR LISTING: Once confirmed, download the render PNG and save it to the article's photo folder:
-   ${appPath.replace(/\\/g, '/')}/photos/{article_id}/lego-render.png
-   (where {article_id} is taken from the article's photo paths)
-   This render will be automatically added as the last photo in the listing.
-
-5. GENERATE LISTING: For LEGO pieces, use:
+4. GENERATE LISTING: For LEGO pieces, use:
    - title: "LEGO [Part Name] [Part Number] [Color]" — optimized for search
    - brand: "LEGO"
    - description: Include part number, official name, color, dimensions, category, and any special features
@@ -4807,7 +4989,7 @@ Before generating each listing, search the web to:
 1. Identify the EXACT specific product (brand, model, year, variant, edition) based on what you see in the photos
 2. Search for the SPECIFIC item's current market value on Vinted, eBay, or other marketplaces — NOT the generic product line
 3. Gather detailed specifications to enrich the description
-Use the WebSearch and WebFetch tools to do this research.
+${aiTools().searchAndFetch}
 
 DESCRIPTION STYLE:
 Write a clear, concise description in ${listingLang} (max 500 chars). Include:
@@ -4824,7 +5006,7 @@ Each object must have this format:
 {
   "title": "Vinted listing title in ${listingLang} (max 100 chars, include brand and key features)",
   "description": "Plain text description in ${listingLang} (max 500 chars)",
-  "price": "Suggested price in EUR as number (must end in .90 or .99)",
+  "price": "Suggested price in EUR as number (minimum 1.00, must end in .90 or .99, e.g. 1.90, 4.99, 12.90)",
   "brand": "Brand name or empty string if unknown",
   "condition": "One of the condition options above",
   "colors": ["One or more color names from the list above"],
@@ -4855,11 +5037,9 @@ async function generateVintedListing(listing) {
   await api.writePromptFile(prompt);
   await api.deleteResponseFile();
 
-  api.sendToTerminal('/clear\r');
-  await new Promise(r => setTimeout(r, 1000));
   const promptFullPath = appPath.replace(/\\/g, '/') + '/.prompt.md';
   const responseFullPath = appPath.replace(/\\/g, '/') + '/.response.json';
-  api.sendToTerminal(`Read the file ${promptFullPath} and follow its instructions. Write the JSON result to ${responseFullPath} using the Write tool.\r`);
+  await sendAiPrompt(promptFullPath, responseFullPath);
 
   listing.status = 'waiting_import';
   await saveVintedListing(listing);
@@ -5834,11 +6014,9 @@ function renderWallapopNewListing() {
     await api.writePromptFile(prompt);
     await api.deleteResponseFile();
 
-    api.sendToTerminal('/clear\r');
-    await new Promise(r => setTimeout(r, 1000));
     const promptFullPath = appPath.replace(/\\/g, '/') + '/.prompt.md';
     const responseFullPath = appPath.replace(/\\/g, '/') + '/.response.json';
-    api.sendToTerminal(`Read the file ${promptFullPath} and follow its instructions. Write the JSON result to ${responseFullPath} using the Write tool.\r`);
+    await sendAiPrompt(promptFullPath, responseFullPath);
 
     showNotification(`${t('generate_prompt_sent')} (${validArticles.length}).`);
   }
@@ -6006,7 +6184,7 @@ Before generating each listing, search the web to:
 1. Identify the EXACT specific product (brand, model, year, variant, edition) based on what you see in the photos
 2. Search for the SPECIFIC item's current market value on Wallapop, eBay, or other marketplaces — NOT the generic product line
 3. Gather detailed specifications to enrich the description
-Use the WebSearch and WebFetch tools to do this research.
+${aiTools().searchAndFetch}
 
 DESCRIPTION STYLE:
 Write a clear, concise description in ${listingLang} (max 640 chars). Include:
@@ -6051,11 +6229,9 @@ async function generateWallapopListing(listing) {
   await api.writePromptFile(prompt);
   await api.deleteResponseFile();
 
-  api.sendToTerminal('/clear\r');
-  await new Promise(r => setTimeout(r, 1000));
   const promptFullPath = appPath.replace(/\\/g, '/') + '/.prompt.md';
   const responseFullPath = appPath.replace(/\\/g, '/') + '/.response.json';
-  api.sendToTerminal(`Read the file ${promptFullPath} and follow its instructions. Write the JSON result to ${responseFullPath} using the Write tool.\r`);
+  await sendAiPrompt(promptFullPath, responseFullPath);
 
   listing.status = 'waiting_import';
   await saveWallapopListing(listing);
@@ -7016,8 +7192,8 @@ function renderEtsyNewListing() {
 
       <!-- Column 2: Generate -->
       <div class="batch-column" style="display: flex; flex-direction: column;">
-        <h3 style="margin-bottom: 12px;">${t('generate') || 'Generate with Claude'}</h3>
-        <p class="text-secondary text-small" style="margin-bottom: 12px;">${t('generate_desc') || 'Add photos, then generate listing data using Claude Code'}</p>
+        <h3 style="margin-bottom: 12px;">${t('generate') || 'Generate with AI'}</h3>
+        <p class="text-secondary text-small" style="margin-bottom: 12px;">${t('generate_desc') || 'Add photos, then generate listing data using AI'}</p>
         <button class="btn btn-primary" id="etsy-batch-generate" style="margin-bottom: 12px;" disabled>${t('generate_btn') || 'Generate Listing'}</button>
         <button class="btn btn-secondary" id="etsy-batch-import" style="margin-bottom: 12px;" disabled>${t('import_btn') || 'Import Response'}</button>
         <div id="etsy-batch-status" class="text-secondary text-small"></div>
@@ -7127,15 +7303,13 @@ function renderEtsyNewListing() {
     await api.writePromptFile(prompt);
     await api.deleteResponseFile();
 
-    api.sendToTerminal('/clear\r');
-    await new Promise(r => setTimeout(r, 1000));
     const promptFullPath = appPath.replace(/\\/g, '/') + '/.prompt.md';
     const responseFullPath = appPath.replace(/\\/g, '/') + '/.response.json';
-    api.sendToTerminal(`Read the file ${promptFullPath} and follow its instructions. Write the JSON result to ${responseFullPath} using the Write tool.\r`);
+    await sendAiPrompt(promptFullPath, responseFullPath);
 
     batchListing.status = 'waiting_import';
     await saveEtsyListing(batchListing);
-    statusDiv.textContent = t('generate_prompt_sent') || 'Prompt sent to Claude Code. Wait for response, then click Import.';
+    statusDiv.textContent = t('generate_prompt_sent') || 'Prompt sent to AI. Wait for response, then click Import.';
     updateButtons();
   });
 
@@ -7256,6 +7430,7 @@ Before generating each listing, search the web to:
 1. Identify the EXACT product from the photos (brand, model, year, variant)
 2. Research current market value for accurate pricing
 3. Gather detailed specs for description and tags
+${aiTools().searchAndFetch}
 
 ETSY-SPECIFIC RULES:
 - title: max 140 chars, keyword-rich for Etsy search, in ${listingLang}
@@ -7265,7 +7440,7 @@ ETSY-SPECIFIC RULES:
 - when_made: "made_to_order" | "2020_2025" | "2010_2019" | "2000_2009" | "before_2000" | "1990s" | "1980s" | "1970s" | "1960s" | "1950s" | "1940s" | "1930s" | "1920s" | "1910s" | "1900s"
 - materials: list of materials visible in the product
 - is_supply: true only if it's a craft supply
-- price: in EUR, reasonable market value (end in .90 or .99)
+- price: in EUR, minimum 1.00, reasonable market value (must end in .90 or .99, e.g. 1.90, 4.99, 12.90)
 - taxonomy_id: set to 0 (will be assigned manually)
 
 Respond with ONLY the JSON array, nothing else.`;

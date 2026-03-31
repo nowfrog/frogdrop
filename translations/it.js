@@ -20,12 +20,16 @@ module.exports = {
   settings_explorer_path: "Cartella foto predefinita",
   settings_explorer_placeholder: "es. D:\\Foto",
   settings_saved: "Impostazioni salvate!",
+  settings_ai_engine: "Motore AI",
+  settings_ai_engine_desc: "Scegli quale assistente AI usare nel terminale",
+  settings_ai_engine_changed: "Motore AI cambiato. Il terminale si sta riavviando...",
+  settings_ai_engine_choose: "Scegli il motore AI da usare",
   settings_back: "Indietro",
   settings_save: "Salva",
   settings_browse: "Sfoglia...",
 
   // eBay settings
-  ebay_welcome: "Benvenuto su FROGDROP",
+  ebay_welcome: "Benvenuto su NOWFROG SHOP",
   ebay_setup_intro: "Per iniziare, inserisci le credenziali API eBay. Puoi ottenerle da",
   ebay_app_id: "App ID (Client ID)",
   ebay_dev_id: "Dev ID",
@@ -145,7 +149,7 @@ module.exports = {
   // New listing
   new_listing_title: "Nuovi Annunci",
   new_listing_desc: "Aggiungi le foto per ogni articolo. Puoi preparare più articoli e generare tutti gli annunci insieme.",
-  new_generate: "Genera Annuncio con Claude",
+  new_generate: "Genera Annuncio con AI",
   new_import_json: "Importa JSON",
   new_create_manual: "Crea manualmente",
   new_article: "Articolo",
@@ -248,11 +252,11 @@ module.exports = {
   // Import
   import_title: "Importazione in corso...",
   import_cleaning: "Pulizia foto originali...",
-  import_not_found: "File .response.json non trovato. Aspetta che Claude finisca.",
+  import_not_found: "File .response.json non trovato. Aspetta che l'AI finisca.",
   import_invalid_json: "JSON non valido nel file .response.json",
 
   // Generate
-  generate_prompt_sent: "Richiesta inviata a Claude. Clicca \"Importa JSON\" quando ha finito.",
+  generate_prompt_sent: "Richiesta inviata all'AI. Clicca \"Importa JSON\" quando ha finito.",
   generate_add_photos: "Aggiungi foto ad almeno un articolo.",
   generate_loading_specs: "Caricamento caratteristiche categoria...",
   generate_imported: "Annuncio importato!",
@@ -286,7 +290,7 @@ module.exports = {
   vinted_delete_confirm: "Eliminare",
   vinted_delete_single: "Eliminare questo annuncio?",
   vinted_no_ready: "Nessun annuncio pronto. Crea e genera annunci prima di caricarli.",
-  vinted_generate: "Genera con Claude",
+  vinted_generate: "Genera con AI",
   vinted_copy_title: "Copia titolo",
   vinted_copy_desc: "Copia descrizione",
   vinted_copy_price: "Copia prezzo",
@@ -331,7 +335,7 @@ module.exports = {
   wallapop_delete_confirm: "Eliminare",
   wallapop_delete_single: "Eliminare questo annuncio?",
   wallapop_no_ready: "Nessun annuncio pronto. Crea e genera annunci prima di caricarli.",
-  wallapop_generate: "Genera con Claude",
+  wallapop_generate: "Genera con AI",
   wallapop_copy_title: "Copia titolo",
   wallapop_copy_desc: "Copia descrizione",
   wallapop_copy_price: "Copia prezzo",
