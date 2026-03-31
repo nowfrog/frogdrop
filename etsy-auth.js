@@ -1,48 +1,42 @@
 const { BrowserWindow } = require('electron');
 const https = require('https');
+const http = require('http');
+const crypto = require('crypto');
 const querystring = require('querystring');
 const Store = require('electron-store');
 
 const store = new Store({ cwd: __dirname });
 
-const EBAY_AUTH_URL = 'https://auth.ebay.com/oauth2/authorize';
-const EBAY_TOKEN_URL = 'https://api.ebay.com/identity/v1/oauth2/token';
-const REDIRECT_URI_NAME = 'Andrea_Morana-AndreaMo-nowfro-hmsqeljd';
-const SCOPES = [
-  'https://api.ebay.com/oauth/api_scope',
-  'https://api.ebay.com/oauth/api_scope/sell.inventory',
-  'https://api.ebay.com/oauth/api_scope/sell.marketing',
-  'https://api.ebay.com/oauth/api_scope/sell.account',
-  'https://api.ebay.com/oauth/api_scope/sell.fulfillment'
-].join(' ');
+const ETSY_AUTH_URL = 'https://www.etsy.com/oauth/connect';
+const ETSY_TOKEN_URL = 'https://api.etsy.com/v3/public/oauth/token';
+const REDIRECT_URI = 'http://localhost:3847/callback';
+const SCOPES = 'listings_r listings_w listings_d shops_r shops_w';
 
-function getAuthUrl(settings) {
-  const params = querystring.stringify({
-    client_id: settings.ebayAppId,
-    redirect_uri: settings.redirectUriName || REDIRECT_URI_NAME,
-    response_type: 'code',
-    scope: SCOPES
-  });
-  return `${EBAY_AUTH_URL}?${params}`;
+function generateCodeVerifier() {
+  return crypto.randomBytes(32).toString('base64url');
 }
 
-function exchangeCodeForToken(code, settings) {
+function generateCodeChallenge(verifier) {
+  return crypto.createHash('sha256').update(verifier).digest('base64url');
+}
+
+function exchangeCodeForToken(code, codeVerifier, settings) {
   return new Promise((resolve, reject) => {
-    const credentials = Buffer.from(`${settings.ebayAppId}:${settings.ebayCertId}`).toString('base64');
     const postData = querystring.stringify({
       grant_type: 'authorization_code',
+      client_id: settings.etsyApiKey,
+      redirect_uri: REDIRECT_URI,
       code: code,
-      redirect_uri: settings.redirectUriName || REDIRECT_URI_NAME
+      code_verifier: codeVerifier
     });
 
-    const url = new URL(EBAY_TOKEN_URL);
+    const url = new URL(ETSY_TOKEN_URL);
     const options = {
       hostname: url.hostname,
       path: url.pathname,
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': `Basic ${credentials}`,
         'Content-Length': Buffer.byteLength(postData)
       }
     };
@@ -57,7 +51,7 @@ function exchangeCodeForToken(code, settings) {
             return reject(new Error(tokenData.error_description || tokenData.error));
           }
           tokenData.expires_at = Date.now() + (tokenData.expires_in * 1000);
-          store.set('ebayTokens', tokenData);
+          store.set('etsyTokens', tokenData);
           resolve(tokenData);
         } catch (e) {
           reject(new Error('Failed to parse token response'));
@@ -73,26 +67,24 @@ function exchangeCodeForToken(code, settings) {
 
 function refreshToken(settings) {
   return new Promise((resolve, reject) => {
-    const tokens = store.get('ebayTokens');
+    const tokens = store.get('etsyTokens');
     if (!tokens || !tokens.refresh_token) {
       return reject(new Error('No refresh token available'));
     }
 
-    const credentials = Buffer.from(`${settings.ebayAppId}:${settings.ebayCertId}`).toString('base64');
     const postData = querystring.stringify({
       grant_type: 'refresh_token',
-      refresh_token: tokens.refresh_token,
-      scope: SCOPES
+      client_id: settings.etsyApiKey,
+      refresh_token: tokens.refresh_token
     });
 
-    const url = new URL(EBAY_TOKEN_URL);
+    const url = new URL(ETSY_TOKEN_URL);
     const options = {
       hostname: url.hostname,
       path: url.pathname,
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': `Basic ${credentials}`,
         'Content-Length': Buffer.byteLength(postData)
       }
     };
@@ -107,11 +99,10 @@ function refreshToken(settings) {
             return reject(new Error(tokenData.error_description || tokenData.error));
           }
           tokenData.expires_at = Date.now() + (tokenData.expires_in * 1000);
-          // Preserve the refresh token if not returned
           if (!tokenData.refresh_token && tokens.refresh_token) {
             tokenData.refresh_token = tokens.refresh_token;
           }
-          store.set('ebayTokens', tokenData);
+          store.set('etsyTokens', tokenData);
           resolve(tokenData);
         } catch (e) {
           reject(new Error('Failed to parse token response'));
@@ -126,77 +117,90 @@ function refreshToken(settings) {
 }
 
 async function getValidToken(settings) {
-  const tokens = store.get('ebayTokens');
+  const tokens = store.get('etsyTokens');
   if (!tokens) {
     throw new Error('No tokens stored. Please authenticate first.');
   }
-
   // 60 second buffer before expiration
   if (tokens.expires_at && Date.now() < tokens.expires_at - 60000) {
     return tokens.access_token;
   }
-
   const refreshed = await refreshToken(settings);
   return refreshed.access_token;
 }
 
 function startOAuthFlow(settings) {
   return new Promise((resolve, reject) => {
-    const authUrl = getAuthUrl(settings);
-    let resolved = false;
+    const codeVerifier = generateCodeVerifier();
+    const codeChallenge = generateCodeChallenge(codeVerifier);
+    const oauthState = crypto.randomBytes(16).toString('hex');
 
-    const authWindow = new BrowserWindow({
-      width: 800,
-      height: 700,
-      show: true,
-      webPreferences: {
-        nodeIntegration: false,
-        contextIsolation: true
-      }
+    const params = querystring.stringify({
+      response_type: 'code',
+      client_id: settings.etsyApiKey,
+      redirect_uri: REDIRECT_URI,
+      scope: SCOPES,
+      state: oauthState,
+      code_challenge: codeChallenge,
+      code_challenge_method: 'S256'
     });
 
-    authWindow.loadURL(authUrl);
+    const authUrl = `${ETSY_AUTH_URL}?${params}`;
+    let resolved = false;
+    let authWindow = null;
 
-    function handleUrl(url) {
+    // Start a local HTTP server to catch the redirect
+    const server = http.createServer((req, res) => {
       if (resolved) return;
       try {
-        const parsed = new URL(url);
-        const code = parsed.searchParams.get('code');
-        if (code) {
+        const url = new URL(req.url, 'http://localhost:3847');
+        const code = url.searchParams.get('code');
+        const returnedState = url.searchParams.get('state');
+
+        if (code && returnedState === oauthState) {
           resolved = true;
-          authWindow.close();
-          exchangeCodeForToken(code, settings).then(resolve).catch(reject);
+          res.writeHead(200, { 'Content-Type': 'text/html' });
+          res.end('<html><body><h2>Authentication successful!</h2><p>You can close this window.</p><script>window.close()</script></body></html>');
+          server.close();
+          if (authWindow && !authWindow.isDestroyed()) authWindow.close();
+          exchangeCodeForToken(code, codeVerifier, settings).then(resolve).catch(reject);
+        } else if (url.searchParams.get('error')) {
+          resolved = true;
+          res.writeHead(400, { 'Content-Type': 'text/html' });
+          res.end('<html><body><h2>Authentication failed</h2></body></html>');
+          server.close();
+          if (authWindow && !authWindow.isDestroyed()) authWindow.close();
+          reject(new Error(url.searchParams.get('error_description') || 'Authentication failed'));
         }
       } catch (e) {
         // ignore URL parse errors
       }
-    }
-
-    // Catch all possible navigation types
-    authWindow.webContents.on('will-redirect', (event, url) => {
-      handleUrl(url);
     });
 
-    authWindow.webContents.on('will-navigate', (event, url) => {
-      handleUrl(url);
+    server.listen(3847, () => {
+      authWindow = new BrowserWindow({
+        width: 800,
+        height: 700,
+        show: true,
+        webPreferences: {
+          nodeIntegration: false,
+          contextIsolation: true
+        }
+      });
+
+      authWindow.loadURL(authUrl);
+
+      authWindow.on('closed', () => {
+        if (!resolved) {
+          server.close();
+          reject(new Error('Authentication window was closed'));
+        }
+      });
     });
 
-    authWindow.webContents.on('did-navigate', (event, url) => {
-      handleUrl(url);
-    });
-
-    authWindow.webContents.on('did-redirect-navigation', (event, url) => {
-      handleUrl(url);
-    });
-
-    // Also intercept URL changes via did-navigate-in-page (SPA-style)
-    authWindow.webContents.on('did-navigate-in-page', (event, url) => {
-      handleUrl(url);
-    });
-
-    authWindow.on('closed', () => {
+    server.on('error', (e) => {
       if (!resolved) {
-        reject(new Error('Authentication window was closed'));
+        reject(new Error('Failed to start auth server: ' + e.message));
       }
     });
   });

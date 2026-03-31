@@ -1,5 +1,12 @@
 node_modules/
-dist/
-.env
-settings.json
-tokens.json
+.prompt.md
+.response.json
+photos/
+appdata/
+config.json
+lego-data/
+docs/
+test-api.js
+start.bat
+start.vbs
+.claude/

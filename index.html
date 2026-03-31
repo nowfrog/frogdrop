@@ -3,21 +3,52 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NOWFROG SHOP</title>
+  <title>FROGDROP</title>
+  <link rel="stylesheet" href="./node_modules/@xterm/xterm/css/xterm.css">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div id="app">
+  <div id="splash-screen">
+    <img src="logo.png" alt="FROGDROP" id="splash-logo" />
+    <h1 id="splash-title">FROGDROP</h1>
+    <p id="splash-subtitle" style="font-size: 13px; color: var(--text-secondary); margin-bottom: 24px;">Drop your listings everywhere</p>
+    <div id="splash-checks" style="text-align: left; width: 280px; margin-bottom: 20px;"></div>
+    <p id="splash-message" style="font-size: 13px; color: var(--text-secondary);"></p>
+    <button id="splash-enter-btn" class="btn btn-primary" style="display: none; margin-top: 16px; padding: 12px 40px; font-size: 16px;">Enter</button>
+  </div>
+  <div id="app" style="display: none;">
     <div id="panel-left">
-      <div id="terminal-header">
-        <span>Claude Code Terminal</span>
+      <div id="ui-container">
+        <!-- Populated by JS -->
       </div>
-      <div id="terminal-container"></div>
     </div>
     <div id="resize-handle"></div>
     <div id="panel-right">
-      <div id="ui-container">
-        <!-- Populated by JS -->
+      <div id="terminal-header">
+        <span>AI Terminal</span>
+        <button id="youtube-toggle-btn" title="YouTube" style="margin-left: auto;">&#9654;</button>
+      </div>
+      <div id="terminal-container"></div>
+      <div id="youtube-resize-handle" style="display: none;"></div>
+      <div id="youtube-panel">
+        <div id="youtube-panel-header">
+          <span style="font-size: 14px; color: #ff0000;">&#9654;</span>
+          <input type="text" id="youtube-url-input" placeholder="YouTube URL or search...">
+          <button id="youtube-go-btn">Go</button>
+          <button id="youtube-close-btn">&#10005;</button>
+        </div>
+        <div id="youtube-webview-container">
+          <webview id="youtube-webview" src="about:blank" partition="persist:youtube" allowpopups useragent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" style="width:100%; height:100%;"></webview>
+        </div>
+      </div>
+      <div id="explorer-resize-handle"></div>
+      <div id="explorer-panel">
+        <div id="explorer-header">
+          <span id="explorer-breadcrumb">File Explorer</span>
+          <button id="explorer-refresh-btn" title="Aggiorna"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6"/><path d="M2.5 22v-6h6"/><path d="M3.5 12a9 9 0 0 1 15-6.7L21.5 8"/><path d="M20.5 12a9 9 0 0 1-15 6.7L2.5 16"/></svg></button>
+          <button id="explorer-up-btn" title="Cartella superiore">&#8593;</button>
+        </div>
+        <div id="explorer-grid"></div>
       </div>
     </div>
   </div>
